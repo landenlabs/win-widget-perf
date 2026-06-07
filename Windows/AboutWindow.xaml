@@ -1,0 +1,124 @@
+<!-- Copyright (c) 2026 LanDen Labs - Dennis Lang -->
+<Window x:Class="WinWidgetPerf.Windows.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="About WinWidgetPerf"
+        Width="380" Height="600"
+        MinWidth="380" MinHeight="500"
+        ResizeMode="CanResizeWithGrip"
+        WindowStartupLocation="CenterScreen"
+        Background="#FF1E1E2E"
+        Foreground="#FFCDD6F4"
+        WindowStyle="SingleBorderWindow">
+
+    <Grid Margin="28,24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="182"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Company logo — video or static fallback -->
+        <Image x:Name="LogoFallback" Grid.Row="0"
+               Stretch="Uniform"
+               Visibility="Collapsed"/>
+        <MediaElement x:Name="LogoPlayer" Grid.Row="0"
+                      LoadedBehavior="Manual"
+                      UnloadedBehavior="Stop"
+                      IsMuted="True"
+                      Stretch="Uniform"
+                      Visibility="Collapsed"/>
+
+        <!-- Scrollable content -->
+        <ScrollViewer Grid.Row="2"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="0,0,18,0">
+
+                <!-- App name + version -->
+                <TextBlock Text="📈  WinWidgetPerf" FontSize="22" FontWeight="Bold"
+                           Foreground="#FF7AA2F7"/>
+                <TextBlock x:Name="VersionText"
+                           Foreground="#FF6C7086" FontSize="12" Margin="0,4,0,0"/>
+
+                <Rectangle Height="1" Fill="#FF313244" Margin="0,12,0,0"/>
+
+                <!-- Info -->
+                <StackPanel Margin="0,14,0,0">
+                    <TextBlock TextWrapping="Wrap" Foreground="#FFBAC2DE" LineHeight="22">
+                        Charts real-time CPU load and disk queue activity as a transparent
+                        stripchart overlay on your Windows desktop. Both metrics share one
+                        scrolling chart, drawn in distinct colors.
+                    </TextBlock>
+                    <TextBlock Margin="0,12,0,0" Foreground="#FFBAC2DE" FontSize="11">
+                        <Run>Created by: LanDen Labs (2026)</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="#FFBAC2DE" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap">
+                        <Run>GitHub:&#x2003;&#x2003;&#x2003;</Run><Hyperlink NavigateUri="https://github.com/landenlabs/win-widget-perf.git"
+                                     RequestNavigate="Hyperlink_RequestNavigate"
+                                     Foreground="#FF89B4FA">https://github.com/landenlabs/win-widget-perf.git</Hyperlink>
+                    </TextBlock>
+                    <TextBlock Margin="0,12,0,0" Foreground="#FF6C7086" FontSize="11">
+                        Metrics powered by Windows performance counters
+                        (Processor &amp; LogicalDisk).
+                    </TextBlock>
+                </StackPanel>
+
+                <Rectangle Height="1" Fill="#FF313244" Margin="0,12,0,0"/>
+
+                <!-- Usage hints -->
+                <StackPanel Margin="0,12,0,0">
+                    <TextBlock Foreground="#FFA6ADC8" FontSize="11">
+                        <Run FontWeight="SemiBold" Foreground="#FF89B4FA">Hover</Run>
+                        <Run> the widget to reveal ⚙ and ? buttons and the resize grip.</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="#FFA6ADC8" FontSize="11" Margin="0,3,0,0">
+                        <Run FontWeight="SemiBold" Foreground="#FF89B4FA">Drag</Run>
+                        <Run> the body to reposition; drag the corner grip to resize.</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="#FFA6ADC8" FontSize="11" Margin="0,3,0,0">
+                        <Run FontWeight="SemiBold" Foreground="#FF89B4FA">Right-click</Run>
+                        <Run> for Settings, About, and Exit.</Run>
+                    </TextBlock>
+                </StackPanel>
+
+                <Rectangle Height="1" Fill="#FF313244" Margin="0,12,0,0"/>
+
+                <!-- Legend explanation -->
+                <StackPanel Margin="0,12,0,8">
+                    <TextBlock Text="Reading the chart" FontSize="13" FontWeight="SemiBold"
+                               Foreground="#FF7AA2F7"/>
+                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0">
+                        <Run Foreground="#FF89B4FA" FontWeight="SemiBold">CPU</Run>
+                        <Run Foreground="#FFA6ADC8"> — total processor load, 0–100% of chart height.</Run>
+                    </TextBlock>
+                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0">
+                        <Run Foreground="#FFF9A825" FontWeight="SemiBold">Disk Q</Run>
+                        <Run Foreground="#FFA6ADC8"> — average disk queue length for the selected drive, scaled so the configurable max maps to full height.</Run>
+                    </TextBlock>
+                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"
+                               Foreground="#FF6C7086">
+                        Chart duration and the disk drive are set in Settings.
+                    </TextBlock>
+                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0">
+                        <Run Foreground="#FFE6B860" FontWeight="SemiBold">🔥 Top process</Run>
+                        <Run Foreground="#FFA6ADC8"> — the title bar names the busiest process and its average share of total CPU over the chart window (processes aggregated by name; hover for the top three). Some protected system processes can only be attributed when running elevated.</Run>
+                    </TextBlock>
+                </StackPanel>
+
+                <Rectangle Height="1" Fill="#FF313244" Margin="0,12,0,0"/>
+
+                <!-- Copyright banner -->
+                <TextBlock Margin="0,12,0,0" Foreground="#FF6C7086" FontSize="11" TextWrapping="Wrap">
+                    Copyright © 2026 LanDen Labs — Dennis Lang. Licensed under Apache 2.0.
+                </TextBlock>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <Button Grid.Row="4" Content="Close" Style="{StaticResource AccentButton}"
+                HorizontalAlignment="Right" Click="Close_Click"/>
+    </Grid>
+</Window>

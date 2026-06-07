@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.17763.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>WinWidgetPerf</AssemblyName>
+    <RootNamespace>WinWidgetPerf</RootNamespace>
+    <ApplicationIcon>perf.ico</ApplicationIcon>
+    <Version>1.00.01</Version>
+    <AssemblyVersion>$(Version)</AssemblyVersion>
+    <FileVersion>$(Version)</FileVersion>
+    <InformationalVersion>$(Version)</InformationalVersion>
+    <Product>WinWidgetPerf</Product>
+    <AssemblyTitle>CPU &amp; disk performance stripchart widget</AssemblyTitle>
+    <Description>Charts real-time CPU load and disk queue activity as a transparent stripchart overlay on the Windows desktop.</Description>
+    <Company>LanDen Labs</Company>
+    <Authors>Dennis Lang</Authors>
+    <Copyright>Copyright © 2026 LanDen Labs - Dennis Lang</Copyright>
+    <Trademark>LanDen Labs</Trademark>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\landenlabs.mp4">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\landenlabs.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>
