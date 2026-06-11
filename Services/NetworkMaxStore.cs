@@ -35,6 +35,12 @@ public static class NetworkMaxStore
 
     private static readonly string StoreFile = System.IO.Path.Combine(AppDataPath, "network-max.json");
 
+    /// <summary>Full path to the learned-max JSON file.</summary>
+    public static string StorePath => StoreFile;
+
+    /// <summary>Folder that holds the store (and other app data).</summary>
+    public static string FolderPath => AppDataPath;
+
     static NetworkMaxStore()
     {
         if (!Directory.Exists(AppDataPath))

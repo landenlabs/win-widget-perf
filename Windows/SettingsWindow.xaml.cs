@@ -16,6 +16,9 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
 
     public ObservableCollection<string> Drives { get; } = [];
 
+    /// <summary>Full path to the learned network-max store, shown as the button tooltip.</summary>
+    public string NetworkStorePath => NetworkMaxStore.StorePath;
+
     // ── Colors ───────────────────────────────────────────────────────────────
 
     private string _bgColorHex = "#1E1E2E";
@@ -443,6 +446,30 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     }
 
     // ── Dialog buttons ───────────────────────────────────────────────────────
+
+    /// <summary>Opens Explorer with network-max.json selected (or the data folder if it doesn't exist yet).</summary>
+    private void OpenNetworkDataFolder_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (System.IO.File.Exists(NetworkMaxStore.StorePath))
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe")
+                {
+                    Arguments = $"/select,\"{NetworkMaxStore.StorePath}\"",
+                    UseShellExecute = true
+                });
+            }
+            else
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(NetworkMaxStore.FolderPath)
+                {
+                    UseShellExecute = true
+                });
+            }
+        }
+        catch { /* ignore — opening Explorer is best-effort */ }
+    }
 
     private void OK_Click(object sender, RoutedEventArgs e)
     {
