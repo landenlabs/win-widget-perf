@@ -10,7 +10,7 @@
     <AssemblyName>WinWidgetPerf</AssemblyName>
     <RootNamespace>WinWidgetPerf</RootNamespace>
     <ApplicationIcon>perf.ico</ApplicationIcon>
-    <Version>6.06.06</Version>
+    <Version>6.06.07</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
     <InformationalVersion>$(Version)</InformationalVersion>
