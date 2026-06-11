@@ -156,6 +156,12 @@
                         <TextBlock x:Name="DiskLegend" Text="C: Q --"
                                    Foreground="#FFCDD6F4" FontSize="10"
                                    FontFamily="Consolas, Courier New"
+                                   VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Ellipse x:Name="NetDot" Width="8" Height="8" Fill="#FFA6E3A1"
+                                 VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock x:Name="NetLegend" Text="Net --%"
+                                   Foreground="#FFCDD6F4" FontSize="10"
+                                   FontFamily="Consolas, Courier New"
                                    VerticalAlignment="Center"/>
                     </StackPanel>
 

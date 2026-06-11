@@ -15,6 +15,7 @@ public partial class WidgetWindow : Window
     private readonly WidgetSettings _settings;
     private readonly PerfService _perfService;
     private readonly ProcessCpuService _processCpuService;
+    private readonly NetworkService _networkService;
     private readonly Queue<PerfSample> _history = new();
 
     private System.Windows.Threading.DispatcherTimer? _updateTimer;
@@ -25,6 +26,7 @@ public partial class WidgetWindow : Window
     private double _bgOpacity = 0.80;
     private SolidColorBrush _cpuBrush = new(System.Windows.Media.Colors.CornflowerBlue);
     private SolidColorBrush _diskBrush = new(System.Windows.Media.Colors.Orange);
+    private SolidColorBrush _netBrush = new(System.Windows.Media.Colors.LightGreen);
 
     private bool _isEmbedded;
     private int _embeddedX;
@@ -44,13 +46,14 @@ public partial class WidgetWindow : Window
 
     public string WidgetId => _settings.Id;
 
-    public WidgetWindow(WidgetSettings settings, PerfService perfService, ProcessCpuService processCpuService)
+    public WidgetWindow(WidgetSettings settings, PerfService perfService, ProcessCpuService processCpuService, NetworkService networkService)
     {
         InitializeComponent();
 
         _settings = settings;
         _perfService = perfService;
         _processCpuService = processCpuService;
+        _networkService = networkService;
 
         _bgColorHex = string.IsNullOrEmpty(settings.BackgroundColor) ? "#1E1E2E" : settings.BackgroundColor;
         _bgOpacity = settings.BackgroundOpacity > 0 ? settings.BackgroundOpacity : 0.80;
@@ -151,13 +154,20 @@ public partial class WidgetWindow : Window
     {
         double cpu = _perfService.GetCpuLoad();
         double disk = _perfService.GetDiskQueue(_settings.DiskDrive);
+        double net = _settings.ShowNetwork ? _networkService.GetLoadPercent() : 0;
 
-        _history.Enqueue(new PerfSample { Cpu = cpu, DiskQueue = disk });
+        _history.Enqueue(new PerfSample { Cpu = cpu, DiskQueue = disk, Network = net });
         int cap = Capacity;
         while (_history.Count > cap) _history.Dequeue();
 
         CpuLegend.Text = $"CPU {cpu:0}%";
         DiskLegend.Text = $"{NormalizeDrive(_settings.DiskDrive)}: Q {disk:0.0}";
+        NetLegend.Text = $"Net {net:0}%";
+        if (_settings.ShowNetwork)
+        {
+            var (rate, max, label) = _networkService.GetDetail();
+            NetLegend.ToolTip = $"{label}\n{FormatRate(rate)} of {FormatRate(max)} learned max";
+        }
 
         UpdateTopProcess();
         DrawChart();
@@ -192,6 +202,14 @@ public partial class WidgetWindow : Window
         return s % 60 == 0 ? $"{s / 60} min" : $"{s / 60}m {s % 60}s";
     }
 
+    /// <summary>Formats a byte/sec rate as KB/s, MB/s, or GB/s.</summary>
+    private static string FormatRate(double bytesPerSec)
+    {
+        if (bytesPerSec >= 1_000_000_000) return $"{bytesPerSec / 1_000_000_000:0.0} GB/s";
+        if (bytesPerSec >= 1_000_000)     return $"{bytesPerSec / 1_000_000:0.0} MB/s";
+        return $"{bytesPerSec / 1_000:0} KB/s";
+    }
+
     private void DrawChart()
     {
         double w = ChartCanvas.ActualWidth;
@@ -222,8 +240,10 @@ public partial class WidgetWindow : Window
         var samples = _history.ToArray();
         double scale = _settings.DiskQueueScale <= 0 ? 1.0 : _settings.DiskQueueScale;
 
+        bool showNet = _settings.ShowNetwork;
         var cpuPts = new PointCollection(n);
         var diskPts = new PointCollection(n);
+        var netPts = showNet ? new PointCollection(n) : null;
 
         for (int j = 0; j < n; j++)
         {
@@ -232,14 +252,23 @@ public partial class WidgetWindow : Window
             double diskY = h * (1 - Math.Clamp(samples[j].DiskQueue / scale, 0, 1));
             cpuPts.Add(new System.Windows.Point(x, cpuY));
             diskPts.Add(new System.Windows.Point(x, diskY));
+            netPts?.Add(new System.Windows.Point(x, h * (1 - Math.Clamp(samples[j].Network / 100.0, 0, 1))));
         }
 
-        // Disk drawn first so CPU sits on top
+        // Disk and network drawn first so CPU sits on top
         ChartCanvas.Children.Add(new Polyline
         {
             Points = diskPts, Stroke = _diskBrush,
             StrokeThickness = 1.5, StrokeLineJoin = PenLineJoin.Round
         });
+        if (netPts != null)
+        {
+            ChartCanvas.Children.Add(new Polyline
+            {
+                Points = netPts, Stroke = _netBrush,
+                StrokeThickness = 1.5, StrokeLineJoin = PenLineJoin.Round
+            });
+        }
         ChartCanvas.Children.Add(new Polyline
         {
             Points = cpuPts, Stroke = _cpuBrush,
@@ -258,8 +287,10 @@ public partial class WidgetWindow : Window
     {
         _cpuBrush = MakeBrush(_settings.CpuColor, System.Windows.Media.Colors.CornflowerBlue);
         _diskBrush = MakeBrush(_settings.DiskColor, System.Windows.Media.Colors.Orange);
+        _netBrush = MakeBrush(_settings.NetworkColor, System.Windows.Media.Colors.LightGreen);
         CpuDot.Fill = _cpuBrush;
         DiskDot.Fill = _diskBrush;
+        NetDot.Fill = _netBrush;
     }
 
     private static SolidColorBrush MakeBrush(string hex, System.Windows.Media.Color fallback)
@@ -305,11 +336,12 @@ public partial class WidgetWindow : Window
         ApplyBackgroundInternal(opacity);
     }
 
-    public void ApplyChartColors(string chartBgHex, string cpuHex, string diskHex)
+    public void ApplyChartColors(string chartBgHex, string cpuHex, string diskHex, string netHex)
     {
         _settings.ChartBackgroundColor = chartBgHex;
         _settings.CpuColor = cpuHex;
         _settings.DiskColor = diskHex;
+        _settings.NetworkColor = netHex;
         ApplyChartBackgroundInternal();
         RebuildBrushes();
         DrawChart();
@@ -324,12 +356,13 @@ public partial class WidgetWindow : Window
         DiskLegend.FontSize = Math.Max(6, 10 * factor);
     }
 
-    public void ApplyVisibility(bool showTitle, bool showLegend, bool showGrid, bool showTopProcess)
+    public void ApplyVisibility(bool showTitle, bool showLegend, bool showGrid, bool showTopProcess, bool showNetwork)
     {
         _settings.ShowTitle = showTitle;
         _settings.ShowLegend = showLegend;
         _settings.ShowGrid = showGrid;
         _settings.ShowTopProcess = showTopProcess;
+        _settings.ShowNetwork = showNetwork;
         ApplyVisibilityInternal();
         UpdateTopProcess();
         DrawChart();
@@ -340,6 +373,10 @@ public partial class WidgetWindow : Window
         TitleSection.Visibility = _settings.ShowTitle ? Visibility.Visible : Visibility.Collapsed;
         LegendPanel.Visibility = _settings.ShowLegend ? Visibility.Visible : Visibility.Collapsed;
         ProcText.Visibility = _settings.ShowTopProcess ? Visibility.Visible : Visibility.Collapsed;
+
+        var netVisibility = _settings.ShowNetwork ? Visibility.Visible : Visibility.Collapsed;
+        NetDot.Visibility = netVisibility;
+        NetLegend.Visibility = netVisibility;
     }
 
     /// <summary>Applies sampling-related settings and rebuilds the history buffer/timer.</summary>

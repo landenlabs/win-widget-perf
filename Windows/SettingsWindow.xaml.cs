@@ -54,6 +54,15 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     private SolidColorBrush? _diskColorBrush;
     public SolidColorBrush DiskColorBrush => _diskColorBrush ??= ToBrush(_diskColorHex);
 
+    private string _netColorHex = "#FFA6E3A1";
+    public string NetColorHex
+    {
+        get => _netColorHex;
+        set { _netColorHex = value; _netColorBrush = null; OnPropertyChanged(); OnPropertyChanged(nameof(NetColorBrush)); LivePreviewChartColors(); }
+    }
+    private SolidColorBrush? _netColorBrush;
+    public SolidColorBrush NetColorBrush => _netColorBrush ??= ToBrush(_netColorHex);
+
     // ── Sliders / numerics ──────────────────────────────────────────────────
 
     private int _bgOpacityPercent;
@@ -141,12 +150,16 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     private bool _showTopProcess;
     public bool ShowTopProcess { get => _showTopProcess; set { _showTopProcess = value; OnPropertyChanged(); LivePreviewVisibility(); } }
 
+    private bool _showNetwork;
+    public bool ShowNetwork { get => _showNetwork; set { _showNetwork = value; OnPropertyChanged(); LivePreviewVisibility(); } }
+
     // ── Originals for Cancel restore ────────────────────────────────────────
 
     private readonly string _origBgColor;
     private readonly string _origChartBgColor;
     private readonly string _origCpuColor;
     private readonly string _origDiskColor;
+    private readonly string _origNetColor;
     private readonly int _origBgOpacityPercent;
     private readonly int _origFontScalePercent;
     private readonly int _origUpdateInterval;
@@ -159,6 +172,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     private readonly bool _origShowLegend;
     private readonly bool _origShowGrid;
     private readonly bool _origShowTopProcess;
+    private readonly bool _origShowNetwork;
     private readonly double _origPosX;
     private readonly double _origPosY;
 
@@ -192,6 +206,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _origChartBgColor     = Fallback(widget.ChartBackgroundColor, "#0D0D1A");
         _origCpuColor         = Fallback(widget.CpuColor, "#FF89B4FA");
         _origDiskColor        = Fallback(widget.DiskColor, "#FFF9A825");
+        _origNetColor         = Fallback(widget.NetworkColor, "#FFA6E3A1");
         _origBgOpacityPercent = (int)Math.Round(widget.BackgroundOpacity * 100);
         if (_origBgOpacityPercent == 0) _origBgOpacityPercent = 80;
         _origFontScalePercent = widget.FontScalePercent > 0 ? widget.FontScalePercent : 100;
@@ -205,6 +220,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _origShowLegend       = widget.ShowLegend;
         _origShowGrid         = widget.ShowGrid;
         _origShowTopProcess   = widget.ShowTopProcess;
+        _origShowNetwork      = widget.ShowNetwork;
         _origPosX             = livePreviewTarget?.Left ?? widget.X;
         _origPosY             = livePreviewTarget?.Top  ?? widget.Y;
         _editPosX             = _origPosX;
@@ -215,6 +231,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _chartBgColorHex  = _origChartBgColor;
         _cpuColorHex      = _origCpuColor;
         _diskColorHex     = _origDiskColor;
+        _netColorHex      = _origNetColor;
         _bgOpacityPercent = _origBgOpacityPercent;
         _fontScalePercent = _origFontScalePercent;
         _updateInterval   = _origUpdateInterval;
@@ -229,6 +246,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _showLegend       = widget.ShowLegend;
         _showGrid         = widget.ShowGrid;
         _showTopProcess   = widget.ShowTopProcess;
+        _showNetwork      = widget.ShowNetwork;
 
         // Fields were assigned after InitializeComponent() established the bindings,
         // so push every bound property to the UI now.
@@ -238,12 +256,13 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
             nameof(ChartBgColorHex), nameof(ChartBgColorBrush),
             nameof(CpuColorHex), nameof(CpuColorBrush),
             nameof(DiskColorHex), nameof(DiskColorBrush),
+            nameof(NetColorHex), nameof(NetColorBrush),
             nameof(BgOpacityPercent), nameof(FontScalePercent),
             nameof(UpdateInterval), nameof(DurationSeconds), nameof(DurationHint),
             nameof(DiskQueueScale), nameof(SelectedDrive),
             nameof(WidgetWidth), nameof(WidgetHeight),
             nameof(EmbedInWallpaper), nameof(AutoStartEnabled),
-            nameof(ShowTitle), nameof(ShowLegend), nameof(ShowGrid), nameof(ShowTopProcess),
+            nameof(ShowTitle), nameof(ShowLegend), nameof(ShowGrid), nameof(ShowTopProcess), nameof(ShowNetwork),
             nameof(WidgetPositionText),
         })
         {
@@ -261,6 +280,8 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     private void CpuColorSwatch_Click(object sender, RoutedEventArgs e) => PickColor(_cpuColorHex, hex => CpuColorHex = hex);
     private void DiskColorSwatch_Click(object sender, MouseButtonEventArgs e) => PickColor(_diskColorHex, hex => DiskColorHex = hex);
     private void DiskColorSwatch_Click(object sender, RoutedEventArgs e) => PickColor(_diskColorHex, hex => DiskColorHex = hex);
+    private void NetColorSwatch_Click(object sender, MouseButtonEventArgs e) => PickColor(_netColorHex, hex => NetColorHex = hex);
+    private void NetColorSwatch_Click(object sender, RoutedEventArgs e) => PickColor(_netColorHex, hex => NetColorHex = hex);
 
     private void PickColor(string current, Action<string> apply)
     {
@@ -275,8 +296,8 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     // ── Live preview ──────────────────────────────────────────────────────────
 
     private void LivePreviewBackground() => _livePreviewTarget?.ApplyBackground(_bgColorHex, _bgOpacityPercent / 100.0);
-    private void LivePreviewChartColors() => _livePreviewTarget?.ApplyChartColors(_chartBgColorHex, _cpuColorHex, _diskColorHex);
-    private void LivePreviewVisibility() => _livePreviewTarget?.ApplyVisibility(_showTitle, _showLegend, _showGrid, _showTopProcess);
+    private void LivePreviewChartColors() => _livePreviewTarget?.ApplyChartColors(_chartBgColorHex, _cpuColorHex, _diskColorHex, _netColorHex);
+    private void LivePreviewVisibility() => _livePreviewTarget?.ApplyVisibility(_showTitle, _showLegend, _showGrid, _showTopProcess, _showNetwork);
     private void LivePreviewChartSettings() =>
         _livePreviewTarget?.ApplyChartSettings(_selectedDrive, Math.Max(1, _durationSeconds),
             _diskQueueScale > 0 ? _diskQueueScale : 1.0, Math.Max(100, _updateInterval));
@@ -430,6 +451,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _widget.ChartBackgroundColor = _chartBgColorHex;
         _widget.CpuColor             = _cpuColorHex;
         _widget.DiskColor            = _diskColorHex;
+        _widget.NetworkColor         = _netColorHex;
         _widget.FontScalePercent     = _fontScalePercent;
         _widget.UpdateInterval       = Math.Max(100, _updateInterval);
         _widget.DurationSeconds      = Math.Max(1, _durationSeconds);
@@ -442,6 +464,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _widget.ShowLegend           = _showLegend;
         _widget.ShowGrid             = _showGrid;
         _widget.ShowTopProcess       = _showTopProcess;
+        _widget.ShowNetwork          = _showNetwork;
 
         var config = DisplayService.GetCurrentDisplayConfiguration();
         DisplayService.SaveDisplayPosition(_widget, config, (int)_editPosX, (int)_editPosY);
@@ -465,19 +488,21 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _widget.ChartBackgroundColor = _origChartBgColor;
         _widget.CpuColor             = _origCpuColor;
         _widget.DiskColor            = _origDiskColor;
+        _widget.NetworkColor         = _origNetColor;
         _widget.ShowTitle            = _origShowTitle;
         _widget.ShowLegend           = _origShowLegend;
         _widget.ShowGrid             = _origShowGrid;
         _widget.ShowTopProcess       = _origShowTopProcess;
+        _widget.ShowNetwork          = _origShowNetwork;
         _widget.DiskDrive            = _origDrive;
         _widget.DurationSeconds      = _origDurationSeconds;
         _widget.DiskQueueScale       = _origDiskQueueScale;
         _widget.UpdateInterval       = _origUpdateInterval;
 
         _livePreviewTarget?.ApplyBackground(_origBgColor, _origBgOpacityPercent / 100.0);
-        _livePreviewTarget?.ApplyChartColors(_origChartBgColor, _origCpuColor, _origDiskColor);
+        _livePreviewTarget?.ApplyChartColors(_origChartBgColor, _origCpuColor, _origDiskColor, _origNetColor);
         _livePreviewTarget?.ApplyFontScale(_origFontScalePercent);
-        _livePreviewTarget?.ApplyVisibility(_origShowTitle, _origShowLegend, _origShowGrid, _origShowTopProcess);
+        _livePreviewTarget?.ApplyVisibility(_origShowTitle, _origShowLegend, _origShowGrid, _origShowTopProcess, _origShowNetwork);
         _livePreviewTarget?.ApplyChartSettings(_origDrive, _origDurationSeconds,
             _origDiskQueueScale, _origUpdateInterval);
         _livePreviewTarget?.ApplySize(_origWidth, _origHeight);

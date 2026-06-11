@@ -33,6 +33,9 @@ public class WidgetSettings
     public bool ShowLegend { get; set; } = true;
     public bool ShowGrid { get; set; } = true;
 
+    /// <summary>Show the network-load series (learned peak-relative byte rate).</summary>
+    public bool ShowNetwork { get; set; } = true;
+
     /// <summary>Show the busiest process (rolling CPU average) in the title bar.</summary>
     public bool ShowTopProcess { get; set; } = true;
 
@@ -45,6 +48,7 @@ public class WidgetSettings
     public string ChartBackgroundColor { get; set; } = "#0D0D1A";
     public string CpuColor { get; set; } = "#FF89B4FA";   // blue
     public string DiskColor { get; set; } = "#FFF9A825";  // amber
+    public string NetworkColor { get; set; } = "#FFA6E3A1";  // green
 
     /// <summary>
     /// Stores positions for different display configurations.

@@ -91,6 +91,21 @@
                                        Text="{Binding DiskColorHex}"/>
                         </StackPanel>
 
+                        <!-- Network line color -->
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
+                            <TextBlock Text="Network Line:" Foreground="#FFA6ADC8" VerticalAlignment="Center" Margin="0,0,12,0" Width="120"/>
+                            <Border Width="42" Height="28" CornerRadius="4"
+                                    Background="{Binding NetColorBrush}"
+                                    BorderBrush="#FF454570" BorderThickness="1"
+                                    Cursor="Hand" Margin="0,0,12,0"
+                                    MouseLeftButtonDown="NetColorSwatch_Click"/>
+                            <Button Content="Change…" Style="{StaticResource SubtleButton}" Padding="10,5"
+                                    Click="NetColorSwatch_Click"/>
+                            <TextBlock Margin="12,0,0,0" VerticalAlignment="Center"
+                                       Foreground="#FF6C7086" FontSize="11" FontFamily="Consolas, Courier New"
+                                       Text="{Binding NetColorHex}"/>
+                        </StackPanel>
+
                         <!-- Opacity -->
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
                             <TextBlock Text="Opacity:" Foreground="#FFA6ADC8" VerticalAlignment="Center" Margin="0,0,12,0" Width="120"/>
@@ -185,6 +200,8 @@
                             <CheckBox Content="Legend" IsChecked="{Binding ShowLegend, Mode=TwoWay}"
                                       Foreground="#FFA6ADC8" Margin="0,0,20,0"/>
                             <CheckBox Content="Grid Lines" IsChecked="{Binding ShowGrid, Mode=TwoWay}"
+                                      Foreground="#FFA6ADC8" Margin="0,0,20,0"/>
+                            <CheckBox Content="Network" IsChecked="{Binding ShowNetwork, Mode=TwoWay}"
                                       Foreground="#FFA6ADC8"/>
                         </StackPanel>
                         <CheckBox Content="Show busiest process in title (rolling CPU average)"
