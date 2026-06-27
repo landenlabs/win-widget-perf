@@ -312,7 +312,10 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
 
     // ── Screen-map position picker (mirrors the other widgets) ───────────────
 
-    private void Window_Loaded(object sender, RoutedEventArgs e) => BuildScreenMap();
+    private void Window_Loaded(object sender, RoutedEventArgs e)
+        => Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Render, BuildScreenMap);
+
+    private void ScreenMapCanvas_SizeChanged(object sender, SizeChangedEventArgs e) => BuildScreenMap();
 
     private void BuildScreenMap()
     {

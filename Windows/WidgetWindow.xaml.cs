@@ -81,6 +81,7 @@ public partial class WidgetWindow : Window
         _dpiScaleX = source?.CompositionTarget.TransformToDevice.M11 ?? 1.0;
         _dpiScaleY = source?.CompositionTarget.TransformToDevice.M22 ?? 1.0;
 
+        EnsureOnScreen();
         ApplyBackgroundInternal(_bgOpacity);
         ApplyChartBackgroundInternal();
         ApplyFontScale(_settings.FontScalePercent > 0 ? _settings.FontScalePercent : 100);
@@ -122,6 +123,33 @@ public partial class WidgetWindow : Window
         };
         _displayCheckTimer.Tick += (s, e) => CheckDisplayConfigurationChanged();
         _displayCheckTimer.Start();
+    }
+
+    private void EnsureOnScreen()
+    {
+        int physX = (int)(Left   * _dpiScaleX);
+        int physY = (int)(Top    * _dpiScaleY);
+        int physW = (int)(Width  * _dpiScaleX);
+        int physH = (int)(Height * _dpiScaleY);
+
+        const int minVisible = 50;
+        bool visible = System.Windows.Forms.Screen.AllScreens.Any(s =>
+            physX + physW > s.Bounds.Left + minVisible &&
+            physX         < s.Bounds.Right  - minVisible &&
+            physY + physH > s.Bounds.Top    + minVisible &&
+            physY         < s.Bounds.Bottom - minVisible);
+
+        if (!visible)
+        {
+            var area = System.Windows.Forms.Screen.PrimaryScreen?.WorkingArea
+                       ?? new System.Drawing.Rectangle(0, 0, 1920, 1040);
+            Left = (area.Right - physW - 20) / _dpiScaleX;
+            Top  = (area.Top   + 20)         / _dpiScaleY;
+            _embeddedX = (int)Left;
+            _embeddedY = (int)Top;
+            DisplayService.SaveDisplayPosition(_settings, _currentDisplayConfiguration, _embeddedX, _embeddedY);
+            SettingsService.Save(App.Settings);
+        }
     }
 
     private void CheckDisplayConfigurationChanged()
