@@ -34,6 +34,10 @@ public partial class WidgetWindow : Window
     private int _embeddedX;
     private int _embeddedY;
 
+    // Tracks whether this widget has called ProcessCpuService.Start(),
+    // so we always pair every Start() with exactly one Stop().
+    private bool _processCpuServiceStarted;
+
     // Drag (move)
     private bool _isDragging;
     private System.Windows.Point _dragOffset;
@@ -73,6 +77,11 @@ public partial class WidgetWindow : Window
         RebuildBrushes();
         InitializeUpdateTimer();
         InitializeDisplayCheckTimer();
+
+        // Start the process sampler only when this widget is configured to show it.
+        _processCpuServiceStarted = settings.ShowTopProcess;
+        if (_processCpuServiceStarted)
+            _processCpuService.Start();
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -467,6 +476,16 @@ public partial class WidgetWindow : Window
         _settings.ShowNetwork       = showNetwork;
         _settings.ShowDriveSelector = showDriveSelector;
         _settings.ShowDiskSpaceBar  = showDiskSpaceBar;
+
+        // Keep the process-service ref count in sync with the toggle.
+        if (showTopProcess && !_processCpuServiceStarted) {
+            _processCpuService.Start();
+            _processCpuServiceStarted = true;
+        } else if (!showTopProcess && _processCpuServiceStarted) {
+            _processCpuService.Stop();
+            _processCpuServiceStarted = false;
+        }
+
         ApplyVisibilityInternal();
         UpdateTopProcess();
         DrawChart();
@@ -718,6 +737,12 @@ public partial class WidgetWindow : Window
         _updateTimer = null;
         _displayCheckTimer?.Stop();
         _displayCheckTimer = null;
+
+        if (_processCpuServiceStarted) {
+            _processCpuService.Stop();
+            _processCpuServiceStarted = false;
+        }
+
         base.OnClosed(e);
     }
 }

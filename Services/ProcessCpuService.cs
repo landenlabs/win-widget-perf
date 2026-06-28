@@ -26,6 +26,7 @@ public sealed class ProcessCpuService : IDisposable {
     private readonly int _coreCount = Math.Max(1, Environment.ProcessorCount);
     private System.Threading.Timer? _timer;
     private readonly int _sampleMs;                                 // FIX: configurable interval
+    private int _refCount = 0;                                     // reference count for Start/Stop
 
     private const int MaxWindowSeconds = 600;
     private const int ProcessEnumEvery = 3;                        // FIX: only enumerate processes every Nth tick
@@ -33,8 +34,28 @@ public sealed class ProcessCpuService : IDisposable {
 
     public ProcessCpuService(int sampleMs = 1000) {
         _sampleMs = Math.Max(1000, sampleMs);                      // FIX: never faster than 1s
-        SafeSample(); // prime previous totals
-        _timer = new System.Threading.Timer(_ => SafeSample(), null, _sampleMs, _sampleMs);
+        // Timer is NOT started here — call Start() when a consumer needs process data.
+    }
+
+    /// <summary>
+    /// Increments the reference count. Starts the sampling timer on the first call (0 → 1).
+    /// Each call to Start() must be paired with a call to Stop().
+    /// </summary>
+    public void Start() {
+        if (Interlocked.Increment(ref _refCount) == 1) {
+            SafeSample(); // prime previous totals
+            _timer = new System.Threading.Timer(_ => SafeSample(), null, _sampleMs, _sampleMs);
+        }
+    }
+
+    /// <summary>
+    /// Decrements the reference count. Stops and disposes the sampling timer when it reaches 0.
+    /// </summary>
+    public void Stop() {
+        if (Interlocked.Decrement(ref _refCount) == 0) {
+            _timer?.Dispose();
+            _timer = null;
+        }
     }
 
     private void SafeSample() {
@@ -121,6 +142,8 @@ public sealed class ProcessCpuService : IDisposable {
     }
 
     public void Dispose() {
+        // Force-stop regardless of ref count on shutdown.
+        Interlocked.Exchange(ref _refCount, 0);
         _timer?.Dispose();
         _timer = null;
     }
