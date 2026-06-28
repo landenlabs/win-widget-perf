@@ -207,6 +207,12 @@
                         <CheckBox Content="Show busiest process in title (rolling CPU average)"
                                   IsChecked="{Binding ShowTopProcess, Mode=TwoWay}"
                                   Foreground="#FFA6ADC8" Margin="0,10,0,0"/>
+                        <CheckBox Content="Show drive selector buttons below chart"
+                                  IsChecked="{Binding ShowDriveSelector, Mode=TwoWay}"
+                                  Foreground="#FFA6ADC8" Margin="0,8,0,0"/>
+                        <CheckBox Content="Show disk space bar (right side, % used)"
+                                  IsChecked="{Binding ShowDiskSpaceBar, Mode=TwoWay}"
+                                  Foreground="#FFA6ADC8" Margin="0,8,0,0"/>
                     </StackPanel>
                 </Border>
 

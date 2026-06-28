@@ -39,6 +39,12 @@ public class WidgetSettings
     /// <summary>Show the busiest process (rolling CPU average) in the title bar.</summary>
     public bool ShowTopProcess { get; set; } = true;
 
+    /// <summary>Show a row of drive-letter buttons below the chart for quick drive switching.</summary>
+    public bool ShowDriveSelector { get; set; } = false;
+
+    /// <summary>Show a narrow right-side bar indicating percent disk space used on the tracked drive.</summary>
+    public bool ShowDiskSpaceBar { get; set; } = false;
+
     public bool EmbedInWallpaper { get; set; } = true;
 
     public string BackgroundColor { get; set; } = "#1E1E2E";

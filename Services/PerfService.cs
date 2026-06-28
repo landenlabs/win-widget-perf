@@ -69,6 +69,19 @@ public sealed class PerfService : IDisposable
         }
     }
 
+    /// <summary>Percent of disk space used on the given drive (0–100). Returns 0 if unavailable.</summary>
+    public static double GetDiskUsagePercent(string driveLetter)
+    {
+        try
+        {
+            string root = $"{char.ToUpperInvariant((driveLetter.Trim() + "C")[0])}:\\";
+            var info = new DriveInfo(root);
+            if (!info.IsReady || info.TotalSize == 0) return 0;
+            return (1.0 - (double)info.AvailableFreeSpace / info.TotalSize) * 100.0;
+        }
+        catch { return 0; }
+    }
+
     /// <summary>Fixed-drive letters available on this machine, e.g. ["C","D"].</summary>
     public static List<string> GetFixedDrives()
     {

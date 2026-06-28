@@ -156,6 +156,12 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     private bool _showNetwork;
     public bool ShowNetwork { get => _showNetwork; set { _showNetwork = value; OnPropertyChanged(); LivePreviewVisibility(); } }
 
+    private bool _showDriveSelector;
+    public bool ShowDriveSelector { get => _showDriveSelector; set { _showDriveSelector = value; OnPropertyChanged(); LivePreviewVisibility(); } }
+
+    private bool _showDiskSpaceBar;
+    public bool ShowDiskSpaceBar { get => _showDiskSpaceBar; set { _showDiskSpaceBar = value; OnPropertyChanged(); LivePreviewVisibility(); } }
+
     // ── Originals for Cancel restore ────────────────────────────────────────
 
     private readonly string _origBgColor;
@@ -176,6 +182,8 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     private readonly bool _origShowGrid;
     private readonly bool _origShowTopProcess;
     private readonly bool _origShowNetwork;
+    private readonly bool _origShowDriveSelector;
+    private readonly bool _origShowDiskSpaceBar;
     private readonly double _origPosX;
     private readonly double _origPosY;
 
@@ -223,8 +231,10 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _origShowLegend       = widget.ShowLegend;
         _origShowGrid         = widget.ShowGrid;
         _origShowTopProcess   = widget.ShowTopProcess;
-        _origShowNetwork      = widget.ShowNetwork;
-        _origPosX             = livePreviewTarget?.Left ?? widget.X;
+        _origShowNetwork        = widget.ShowNetwork;
+        _origShowDriveSelector  = widget.ShowDriveSelector;
+        _origShowDiskSpaceBar   = widget.ShowDiskSpaceBar;
+        _origPosX               = livePreviewTarget?.Left ?? widget.X;
         _origPosY             = livePreviewTarget?.Top  ?? widget.Y;
         _editPosX             = _origPosX;
         _editPosY             = _origPosY;
@@ -249,7 +259,9 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _showLegend       = widget.ShowLegend;
         _showGrid         = widget.ShowGrid;
         _showTopProcess   = widget.ShowTopProcess;
-        _showNetwork      = widget.ShowNetwork;
+        _showNetwork        = widget.ShowNetwork;
+        _showDriveSelector  = widget.ShowDriveSelector;
+        _showDiskSpaceBar   = widget.ShowDiskSpaceBar;
 
         // Fields were assigned after InitializeComponent() established the bindings,
         // so push every bound property to the UI now.
@@ -266,6 +278,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
             nameof(WidgetWidth), nameof(WidgetHeight),
             nameof(EmbedInWallpaper), nameof(AutoStartEnabled),
             nameof(ShowTitle), nameof(ShowLegend), nameof(ShowGrid), nameof(ShowTopProcess), nameof(ShowNetwork),
+            nameof(ShowDriveSelector), nameof(ShowDiskSpaceBar),
             nameof(WidgetPositionText),
         })
         {
@@ -300,7 +313,9 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
 
     private void LivePreviewBackground() => _livePreviewTarget?.ApplyBackground(_bgColorHex, _bgOpacityPercent / 100.0);
     private void LivePreviewChartColors() => _livePreviewTarget?.ApplyChartColors(_chartBgColorHex, _cpuColorHex, _diskColorHex, _netColorHex);
-    private void LivePreviewVisibility() => _livePreviewTarget?.ApplyVisibility(_showTitle, _showLegend, _showGrid, _showTopProcess, _showNetwork);
+    private void LivePreviewVisibility() => _livePreviewTarget?.ApplyVisibility(
+        _showTitle, _showLegend, _showGrid, _showTopProcess, _showNetwork,
+        _showDriveSelector, _showDiskSpaceBar);
     private void LivePreviewChartSettings() =>
         _livePreviewTarget?.ApplyChartSettings(_selectedDrive, Math.Max(1, _durationSeconds),
             _diskQueueScale > 0 ? _diskQueueScale : 1.0, Math.Max(100, _updateInterval));
@@ -493,8 +508,10 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _widget.ShowTitle            = _showTitle;
         _widget.ShowLegend           = _showLegend;
         _widget.ShowGrid             = _showGrid;
-        _widget.ShowTopProcess       = _showTopProcess;
-        _widget.ShowNetwork          = _showNetwork;
+        _widget.ShowTopProcess    = _showTopProcess;
+        _widget.ShowNetwork       = _showNetwork;
+        _widget.ShowDriveSelector = _showDriveSelector;
+        _widget.ShowDiskSpaceBar  = _showDiskSpaceBar;
 
         var config = DisplayService.GetCurrentDisplayConfiguration();
         DisplayService.SaveDisplayPosition(_widget, config, (int)_editPosX, (int)_editPosY);
@@ -532,7 +549,8 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _livePreviewTarget?.ApplyBackground(_origBgColor, _origBgOpacityPercent / 100.0);
         _livePreviewTarget?.ApplyChartColors(_origChartBgColor, _origCpuColor, _origDiskColor, _origNetColor);
         _livePreviewTarget?.ApplyFontScale(_origFontScalePercent);
-        _livePreviewTarget?.ApplyVisibility(_origShowTitle, _origShowLegend, _origShowGrid, _origShowTopProcess, _origShowNetwork);
+        _livePreviewTarget?.ApplyVisibility(_origShowTitle, _origShowLegend, _origShowGrid, _origShowTopProcess,
+            _origShowNetwork, _origShowDriveSelector, _origShowDiskSpaceBar);
         _livePreviewTarget?.ApplyChartSettings(_origDrive, _origDurationSeconds,
             _origDiskQueueScale, _origUpdateInterval);
         _livePreviewTarget?.ApplySize(_origWidth, _origHeight);

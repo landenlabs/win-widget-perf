@@ -28,6 +28,8 @@ public partial class WidgetWindow : Window
     private SolidColorBrush _diskBrush = new(System.Windows.Media.Colors.Orange);
     private SolidColorBrush _netBrush = new(System.Windows.Media.Colors.LightGreen);
 
+    private double _diskUsagePercent;
+
     private bool _isEmbedded;
     private int _embeddedX;
     private int _embeddedY;
@@ -188,6 +190,12 @@ public partial class WidgetWindow : Window
         int cap = Capacity;
         while (_history.Count > cap) _history.Dequeue();
 
+        if (_settings.ShowDiskSpaceBar)
+        {
+            _diskUsagePercent = PerfService.GetDiskUsagePercent(_settings.DiskDrive);
+            DrawDiskSpaceBar();
+        }
+
         CpuLegend.Text = $"CPU {cpu:0}%";
         DiskLegend.Text = $"{NormalizeDrive(_settings.DiskDrive)}: Q {disk:0.0}";
         NetLegend.Text = $"Net {net:0}%";
@@ -306,6 +314,71 @@ public partial class WidgetWindow : Window
 
     private void ChartCanvas_SizeChanged(object sender, SizeChangedEventArgs e) => DrawChart();
 
+    private void DiskSpaceCanvas_SizeChanged(object sender, SizeChangedEventArgs e) => DrawDiskSpaceBar();
+
+    private void DrawDiskSpaceBar()
+    {
+        double w = DiskSpaceCanvas.ActualWidth;
+        double h = DiskSpaceCanvas.ActualHeight;
+        DiskSpaceCanvas.Children.Clear();
+        if (w <= 0 || h <= 0) return;
+
+        double fraction = Math.Clamp(_diskUsagePercent / 100.0, 0, 1);
+        double barH = h * fraction;
+
+        var color = fraction < 0.70
+            ? System.Windows.Media.Color.FromRgb(0xA6, 0xE3, 0xA1)   // green
+            : fraction < 0.90
+                ? System.Windows.Media.Color.FromRgb(0xF9, 0xA8, 0x25) // amber
+                : System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8); // red
+
+        var rect = new System.Windows.Shapes.Rectangle
+        {
+            Width = w,
+            Height = Math.Max(1, barH),
+            Fill = new SolidColorBrush(color)
+        };
+        System.Windows.Controls.Canvas.SetLeft(rect, 0);
+        System.Windows.Controls.Canvas.SetTop(rect, h - barH);
+        DiskSpaceCanvas.Children.Add(rect);
+
+        DiskSpaceBarBorder.ToolTip = $"{NormalizeDrive(_settings.DiskDrive)}: {_diskUsagePercent:0.#}% used";
+    }
+
+    // ── Drive selector ───────────────────────────────────────────────────────
+
+    private void BuildDriveSelector()
+    {
+        DriveSelectorPanel.Children.Clear();
+        var drives = PerfService.GetFixedDrives();
+        string active = NormalizeDrive(_settings.DiskDrive);
+
+        var activeBg   = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xAA, 0x89, 0xB4, 0xFA));
+        var inactiveBg = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF));
+
+        foreach (var drive in drives)
+        {
+            var btn = new System.Windows.Controls.Button
+            {
+                Content    = $"{drive}:",
+                Tag        = drive,
+                Style      = (Style)FindResource("DriveButtonStyle"),
+                Background = drive == active ? activeBg : inactiveBg,
+            };
+            btn.Click += DriveButton_Click;
+            DriveSelectorPanel.Children.Add(btn);
+        }
+    }
+
+    private void DriveButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.Button btn || btn.Tag is not string drive) return;
+        _settings.DiskDrive = drive;
+        SettingsService.Save(App.Settings);
+        BuildDriveSelector();
+        Sample();
+    }
+
     private static string NormalizeDrive(string drive) =>
         string.IsNullOrWhiteSpace(drive) ? "C" : char.ToUpperInvariant(drive[0]).ToString();
 
@@ -384,13 +457,16 @@ public partial class WidgetWindow : Window
         DiskLegend.FontSize = Math.Max(6, 10 * factor);
     }
 
-    public void ApplyVisibility(bool showTitle, bool showLegend, bool showGrid, bool showTopProcess, bool showNetwork)
+    public void ApplyVisibility(bool showTitle, bool showLegend, bool showGrid, bool showTopProcess,
+                                bool showNetwork, bool showDriveSelector, bool showDiskSpaceBar)
     {
-        _settings.ShowTitle = showTitle;
-        _settings.ShowLegend = showLegend;
-        _settings.ShowGrid = showGrid;
-        _settings.ShowTopProcess = showTopProcess;
-        _settings.ShowNetwork = showNetwork;
+        _settings.ShowTitle         = showTitle;
+        _settings.ShowLegend        = showLegend;
+        _settings.ShowGrid          = showGrid;
+        _settings.ShowTopProcess    = showTopProcess;
+        _settings.ShowNetwork       = showNetwork;
+        _settings.ShowDriveSelector = showDriveSelector;
+        _settings.ShowDiskSpaceBar  = showDiskSpaceBar;
         ApplyVisibilityInternal();
         UpdateTopProcess();
         DrawChart();
@@ -399,12 +475,25 @@ public partial class WidgetWindow : Window
     private void ApplyVisibilityInternal()
     {
         TitleSection.Visibility = _settings.ShowTitle ? Visibility.Visible : Visibility.Collapsed;
-        LegendPanel.Visibility = _settings.ShowLegend ? Visibility.Visible : Visibility.Collapsed;
-        ProcText.Visibility = _settings.ShowTopProcess ? Visibility.Visible : Visibility.Collapsed;
+        LegendPanel.Visibility  = _settings.ShowLegend ? Visibility.Visible : Visibility.Collapsed;
+        ProcText.Visibility     = _settings.ShowTopProcess ? Visibility.Visible : Visibility.Collapsed;
 
         var netVisibility = _settings.ShowNetwork ? Visibility.Visible : Visibility.Collapsed;
-        NetDot.Visibility = netVisibility;
+        NetDot.Visibility    = netVisibility;
         NetLegend.Visibility = netVisibility;
+
+        DiskSpaceBarBorder.Visibility = _settings.ShowDiskSpaceBar
+            ? Visibility.Visible : Visibility.Collapsed;
+
+        if (_settings.ShowDriveSelector)
+        {
+            DriveSelectorPanel.Visibility = Visibility.Visible;
+            BuildDriveSelector();
+        }
+        else
+        {
+            DriveSelectorPanel.Visibility = Visibility.Collapsed;
+        }
     }
 
     /// <summary>Applies sampling-related settings and rebuilds the history buffer/timer.</summary>

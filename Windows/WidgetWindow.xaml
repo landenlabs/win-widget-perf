@@ -41,6 +41,36 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="DriveButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="15"/>
+            <Setter Property="Padding" Value="5,0"/>
+            <Setter Property="Margin" Value="0,0,3,0"/>
+            <Setter Property="Foreground" Value="#CCCDD6F4"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="9"/>
+            <Setter Property="FontFamily" Value="Consolas, Courier New"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="3"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#55FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#88FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Window.ContextMenu>
@@ -78,7 +108,8 @@
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>   <!-- Title -->
-                <RowDefinition Height="*"/>      <!-- Chart -->
+                <RowDefinition Height="*"/>      <!-- Chart + disk-space bar -->
+                <RowDefinition Height="Auto"/>   <!-- Drive selector -->
             </Grid.RowDefinitions>
 
             <!-- Title section (collapses as a unit) -->
@@ -129,56 +160,83 @@
                 <Rectangle Height="1" Fill="#33FFFFFF" Margin="0,0,0,6" IsHitTestVisible="False"/>
             </StackPanel>
 
-            <!-- Chart -->
-            <Border x:Name="ChartBorder"
-                    Grid.Row="1"
-                    Background="#FF0D0D1A"
-                    CornerRadius="4"
-                    ClipToBounds="True">
-                <Grid>
-                    <Canvas x:Name="ChartCanvas" SizeChanged="ChartCanvas_SizeChanged"/>
+            <!-- Chart + optional right-side disk-space bar -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>     <!-- Chart -->
+                    <ColumnDefinition Width="Auto"/>  <!-- Disk-space bar -->
+                </Grid.ColumnDefinitions>
 
-                    <!-- Legend overlay -->
-                    <StackPanel x:Name="LegendPanel"
-                                Orientation="Horizontal"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Top"
-                                Margin="6,4"
-                                IsHitTestVisible="False">
-                        <Ellipse x:Name="CpuDot" Width="8" Height="8" Fill="#FF89B4FA"
-                                 VerticalAlignment="Center" Margin="0,0,4,0"/>
-                        <TextBlock x:Name="CpuLegend" Text="CPU --%"
-                                   Foreground="#FFCDD6F4" FontSize="10"
-                                   FontFamily="Consolas, Courier New"
-                                   VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Ellipse x:Name="DiskDot" Width="8" Height="8" Fill="#FFF9A825"
-                                 VerticalAlignment="Center" Margin="0,0,4,0"/>
-                        <TextBlock x:Name="DiskLegend" Text="C: Q --"
-                                   Foreground="#FFCDD6F4" FontSize="10"
-                                   FontFamily="Consolas, Courier New"
-                                   VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Ellipse x:Name="NetDot" Width="8" Height="8" Fill="#FFA6E3A1"
-                                 VerticalAlignment="Center" Margin="0,0,4,0"/>
-                        <TextBlock x:Name="NetLegend" Text="Net --%"
-                                   Foreground="#FFCDD6F4" FontSize="10"
-                                   FontFamily="Consolas, Courier New"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
+                <Border x:Name="ChartBorder"
+                        Grid.Column="0"
+                        Background="#FF0D0D1A"
+                        CornerRadius="4"
+                        ClipToBounds="True">
+                    <Grid>
+                        <Canvas x:Name="ChartCanvas" SizeChanged="ChartCanvas_SizeChanged"/>
 
-                    <!-- Resize grip -->
-                    <Path x:Name="ResizeGrip"
-                          HorizontalAlignment="Right"
-                          VerticalAlignment="Bottom"
-                          Margin="0,0,1,1"
-                          Fill="#66FFFFFF"
-                          Cursor="SizeNWSE"
-                          Data="M 12,0 L 12,12 L 0,12 Z"
-                          ToolTip="Drag to resize"
-                          MouseLeftButtonDown="ResizeGrip_MouseLeftButtonDown"
-                          MouseMove="ResizeGrip_MouseMove"
-                          MouseLeftButtonUp="ResizeGrip_MouseLeftButtonUp"/>
-                </Grid>
-            </Border>
+                        <!-- Legend overlay -->
+                        <StackPanel x:Name="LegendPanel"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Top"
+                                    Margin="6,4"
+                                    IsHitTestVisible="False">
+                            <Ellipse x:Name="CpuDot" Width="8" Height="8" Fill="#FF89B4FA"
+                                     VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBlock x:Name="CpuLegend" Text="CPU --%"
+                                       Foreground="#FFCDD6F4" FontSize="10"
+                                       FontFamily="Consolas, Courier New"
+                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <Ellipse x:Name="DiskDot" Width="8" Height="8" Fill="#FFF9A825"
+                                     VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBlock x:Name="DiskLegend" Text="C: Q --"
+                                       Foreground="#FFCDD6F4" FontSize="10"
+                                       FontFamily="Consolas, Courier New"
+                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <Ellipse x:Name="NetDot" Width="8" Height="8" Fill="#FFA6E3A1"
+                                     VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBlock x:Name="NetLegend" Text="Net --%"
+                                       Foreground="#FFCDD6F4" FontSize="10"
+                                       FontFamily="Consolas, Courier New"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Resize grip -->
+                        <Path x:Name="ResizeGrip"
+                              HorizontalAlignment="Right"
+                              VerticalAlignment="Bottom"
+                              Margin="0,0,1,1"
+                              Fill="#66FFFFFF"
+                              Cursor="SizeNWSE"
+                              Data="M 12,0 L 12,12 L 0,12 Z"
+                              ToolTip="Drag to resize"
+                              MouseLeftButtonDown="ResizeGrip_MouseLeftButtonDown"
+                              MouseMove="ResizeGrip_MouseMove"
+                              MouseLeftButtonUp="ResizeGrip_MouseLeftButtonUp"/>
+                    </Grid>
+                </Border>
+
+                <!-- Disk-space bar (right side, narrow vertical fill) -->
+                <Border x:Name="DiskSpaceBarBorder"
+                        Grid.Column="1"
+                        Width="12"
+                        Margin="4,0,0,0"
+                        Background="#FF0D0D1A"
+                        CornerRadius="3"
+                        ClipToBounds="True"
+                        Visibility="Collapsed">
+                    <Canvas x:Name="DiskSpaceCanvas"
+                            SizeChanged="DiskSpaceCanvas_SizeChanged"/>
+                </Border>
+            </Grid>
+
+            <!-- Drive selector row -->
+            <WrapPanel x:Name="DriveSelectorPanel"
+                       Grid.Row="2"
+                       Orientation="Horizontal"
+                       Margin="0,4,0,0"
+                       Visibility="Collapsed"/>
         </Grid>
     </Border>
 </Window>
