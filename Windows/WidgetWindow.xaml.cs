@@ -43,10 +43,18 @@ public partial class WidgetWindow : Window
     private System.Windows.Point _dragOffset;
 
     // Resize
+    private enum ResizeZone { None, TopLeft, TopRight, BottomLeft, BottomRight }
+    private const double CornerHitSize = 16;
+
     private bool _isResizing;
+    private ResizeZone _resizeZone;
     private DesktopService.POINT _resizeStartCursor;
     private double _resizeStartW;
     private double _resizeStartH;
+    private double _resizeStartLeft;
+    private double _resizeStartTop;
+    private int _resizeStartEmbeddedX;
+    private int _resizeStartEmbeddedY;
     private double _dpiScaleX = 1.0;
     private double _dpiScaleY = 1.0;
 
@@ -544,14 +552,12 @@ public partial class WidgetWindow : Window
     private void Widget_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
     {
         IconPanel.Visibility = Visibility.Visible;
-        ResizeGrip.Opacity = 1.0;
         ApplyBackgroundInternal(Math.Min(1.0, _bgOpacity + 0.07));
     }
 
     private void Widget_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
     {
         IconPanel.Visibility = Visibility.Collapsed;
-        ResizeGrip.Opacity = 0.4;
         ApplyBackgroundInternal(_bgOpacity);
     }
 
@@ -561,6 +567,14 @@ public partial class WidgetWindow : Window
     {
         if (IsClickOnInteractiveElement(e.OriginalSource))
             return;
+
+        var zone = GetResizeZone(e.GetPosition(WidgetBorder));
+        if (zone != ResizeZone.None)
+        {
+            StartResize(zone);
+            e.Handled = true;
+            return;
+        }
 
         var cursor = DesktopService.GetCursorPosition();
         if (_isEmbedded)
@@ -580,23 +594,51 @@ public partial class WidgetWindow : Window
 
     private void Widget_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
     {
-        if (!_isDragging) return;
-        var cursor = DesktopService.GetCursorPosition();
-        if (_isEmbedded)
+        if (_isDragging)
         {
-            _embeddedX = cursor.X - (int)_dragOffset.X;
-            _embeddedY = cursor.Y - (int)_dragOffset.Y;
-            DesktopService.MoveEmbeddedWindow(this, _embeddedX, _embeddedY);
+            var cursor = DesktopService.GetCursorPosition();
+            if (_isEmbedded)
+            {
+                _embeddedX = cursor.X - (int)_dragOffset.X;
+                _embeddedY = cursor.Y - (int)_dragOffset.Y;
+                DesktopService.MoveEmbeddedWindow(this, _embeddedX, _embeddedY);
+            }
+            else
+            {
+                Left = cursor.X / _dpiScaleX - _dragOffset.X;
+                Top = cursor.Y / _dpiScaleY - _dragOffset.Y;
+            }
+            return;
         }
-        else
+
+        if (_isResizing)
         {
-            Left = cursor.X / _dpiScaleX - _dragOffset.X;
-            Top = cursor.Y / _dpiScaleY - _dragOffset.Y;
+            UpdateResize();
+            return;
         }
+
+        WidgetBorder.Cursor = CursorFor(GetResizeZone(e.GetPosition(WidgetBorder)));
     }
 
     private void Widget_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
+        if (_isResizing)
+        {
+            _isResizing = false;
+            _resizeZone = ResizeZone.None;
+            WidgetBorder.ReleaseMouseCapture();
+
+            _settings.Width = Width;
+            _settings.Height = Height;
+            if (_isEmbedded)
+                DisplayService.SaveDisplayPosition(_settings, _currentDisplayConfiguration, _embeddedX, _embeddedY);
+            else
+                DisplayService.SaveDisplayPosition(_settings, _currentDisplayConfiguration, (int)Left, (int)Top);
+            SettingsService.Save(App.Settings);
+            e.Handled = true;
+            return;
+        }
+
         if (!_isDragging) return;
         _isDragging = false;
         WidgetBorder.ReleaseMouseCapture();
@@ -616,7 +658,6 @@ public partial class WidgetWindow : Window
     private bool IsClickOnInteractiveElement(object? source)
     {
         if (source is System.Windows.Controls.Button) return true;
-        if (source is Path) return true; // resize grip
         if (source is System.Windows.FrameworkElement fe)
         {
             var parent = System.Windows.Media.VisualTreeHelper.GetParent(fe);
@@ -631,41 +672,78 @@ public partial class WidgetWindow : Window
 
     // ── Resizing ─────────────────────────────────────────────────────────────
 
-    private void ResizeGrip_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    /// <summary>
+    /// Bottom corners always resize. Top corners only resize when the title bar is
+    /// hidden — while it's shown, the top of the widget is the drag/move zone instead.
+    /// </summary>
+    private ResizeZone GetResizeZone(System.Windows.Point pos)
+    {
+        double w = WidgetBorder.ActualWidth;
+        double h = WidgetBorder.ActualHeight;
+        bool left = pos.X <= CornerHitSize;
+        bool right = pos.X >= w - CornerHitSize;
+        bool top = pos.Y <= CornerHitSize;
+        bool bottom = pos.Y >= h - CornerHitSize;
+
+        if (bottom && right) return ResizeZone.BottomRight;
+        if (bottom && left) return ResizeZone.BottomLeft;
+        if (_settings.ShowTitle) return ResizeZone.None;
+        if (top && right) return ResizeZone.TopRight;
+        if (top && left) return ResizeZone.TopLeft;
+        return ResizeZone.None;
+    }
+
+    private static System.Windows.Input.Cursor CursorFor(ResizeZone zone) => zone switch
+    {
+        ResizeZone.TopLeft or ResizeZone.BottomRight => System.Windows.Input.Cursors.SizeNWSE,
+        ResizeZone.TopRight or ResizeZone.BottomLeft => System.Windows.Input.Cursors.SizeNESW,
+        _ => System.Windows.Input.Cursors.SizeAll
+    };
+
+    private void StartResize(ResizeZone zone)
     {
         _isResizing = true;
+        _resizeZone = zone;
         _resizeStartCursor = DesktopService.GetCursorPosition();
         _resizeStartW = Width;
         _resizeStartH = Height;
-        ResizeGrip.CaptureMouse();
-        e.Handled = true;
+        _resizeStartLeft = Left;
+        _resizeStartTop = Top;
+        _resizeStartEmbeddedX = _embeddedX;
+        _resizeStartEmbeddedY = _embeddedY;
+        WidgetBorder.CaptureMouse();
     }
 
-    private void ResizeGrip_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    private void UpdateResize()
     {
-        if (!_isResizing) return;
         var cursor = DesktopService.GetCursorPosition();
         double dxDip = (cursor.X - _resizeStartCursor.X) / _dpiScaleX;
         double dyDip = (cursor.Y - _resizeStartCursor.Y) / _dpiScaleY;
 
-        Width = Math.Max(MinWidth, _resizeStartW + dxDip);
-        Height = Math.Max(MinHeight, _resizeStartH + dyDip);
+        bool west = _resizeZone is ResizeZone.TopLeft or ResizeZone.BottomLeft;
+        bool north = _resizeZone is ResizeZone.TopLeft or ResizeZone.TopRight;
+
+        double newW = Math.Max(MinWidth, _resizeStartW + (west ? -dxDip : dxDip));
+        double newH = Math.Max(MinHeight, _resizeStartH + (north ? -dyDip : dyDip));
+
+        Width = newW;
+        Height = newH;
+
+        if (west)
+        {
+            double shrinkW = _resizeStartW - newW;
+            if (_isEmbedded) _embeddedX = _resizeStartEmbeddedX + (int)shrinkW;
+            else Left = _resizeStartLeft + shrinkW;
+        }
+        if (north)
+        {
+            double shrinkH = _resizeStartH - newH;
+            if (_isEmbedded) _embeddedY = _resizeStartEmbeddedY + (int)shrinkH;
+            else Top = _resizeStartTop + shrinkH;
+        }
 
         if (_isEmbedded)
             DesktopService.MoveEmbeddedWindow(this, _embeddedX, _embeddedY);
-        e.Handled = true;
-    }
-
-    private void ResizeGrip_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-    {
-        if (!_isResizing) return;
-        _isResizing = false;
-        ResizeGrip.ReleaseMouseCapture();
-
-        _settings.Width = Width;
-        _settings.Height = Height;
-        SettingsService.Save(App.Settings);
-        e.Handled = true;
     }
 
     // ── Settings / About ─────────────────────────────────────────────────────

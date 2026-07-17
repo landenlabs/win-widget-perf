@@ -201,19 +201,6 @@
                                        FontFamily="Consolas, Courier New"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
-
-                        <!-- Resize grip -->
-                        <Path x:Name="ResizeGrip"
-                              HorizontalAlignment="Right"
-                              VerticalAlignment="Bottom"
-                              Margin="0,0,1,1"
-                              Fill="#66FFFFFF"
-                              Cursor="SizeNWSE"
-                              Data="M 12,0 L 12,12 L 0,12 Z"
-                              ToolTip="Drag to resize"
-                              MouseLeftButtonDown="ResizeGrip_MouseLeftButtonDown"
-                              MouseMove="ResizeGrip_MouseMove"
-                              MouseLeftButtonUp="ResizeGrip_MouseLeftButtonUp"/>
                     </Grid>
                 </Border>
 
