@@ -147,7 +147,7 @@ The `install.bat` script publishes the project and copies the output to `C:\opt\
 | Series | Meaning |
 |--------|---------|
 | **CPU** (blue) | Total processor load, 0–100% of the chart height |
-| **Disk Q** (amber) | Average disk queue length for the selected drive, scaled so the configurable **Disk Queue Max** maps to full height |
+| **Disk** (amber) | Percent of time the selected drive was active/busy, 0–100% of the chart height (matches Task Manager's disk "% Utilization") |
 | **🔥 Top process** | The busiest process and its average share of total CPU over the chart window (processes aggregated by name) |
 
 ---
@@ -163,7 +163,7 @@ Access via right-click → **Settings** or the tray icon menu.
 | Background | Widget background color |
 | Chart Background | Plot-area background color |
 | CPU Line | Color of the CPU trace |
-| Disk Line | Color of the disk-queue trace |
+| Disk Line | Color of the disk-active trace |
 | Opacity | Background transparency 0–100% — updates live |
 | Font Scale | Text size 50–200% — updates live |
 | Embed in wallpaper layer | Places widget behind all windows (requires restart) |
@@ -173,9 +173,8 @@ Access via right-click → **Settings** or the tray icon menu.
 
 | Setting | Description |
 |---------|-------------|
-| Disk Drive | Fixed drive whose queue length is charted (default `C`) |
+| Disk Drive | Fixed drive whose activity is charted (default `C`) |
 | Chart Duration | Total time span shown across the chart, in seconds (default 120 = 2 min) |
-| Disk Queue Max | Queue length that maps to full chart height |
 | Sample Interval | How often metrics are sampled (milliseconds) |
 | Size (W × H) | Exact widget size in pixels (or drag the corner grip) |
 | Title / Legend / Grid Lines | Toggle each chart element |

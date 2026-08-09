@@ -116,27 +116,20 @@
             <StackPanel x:Name="TitleSection" Grid.Row="0" Orientation="Vertical">
                 <Grid Height="20" Margin="0,0,0,4">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock x:Name="TitleText"
                                Grid.Column="0"
-                               Text="📈 Performance"
-                               Foreground="#AAFFFFFF"
                                FontSize="11"
+                               Margin="0,0,6,0"
                                VerticalAlignment="Center"
-                               IsHitTestVisible="False"/>
-                    <TextBlock x:Name="ProcText"
-                               Grid.Column="1"
-                               Text=""
-                               Foreground="#FFE6B860"
-                               FontSize="11"
-                               Margin="8,0,6,0"
-                               VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis"/>
+                               TextTrimming="CharacterEllipsis"
+                               IsHitTestVisible="False">
+                        <Run Text="📈 Performance" Foreground="#AAFFFFFF"/>
+                    </TextBlock>
                     <StackPanel x:Name="IconPanel"
-                                Grid.Column="2"
+                                Grid.Column="1"
                                 Orientation="Horizontal"
                                 HorizontalAlignment="Right"
                                 Visibility="Collapsed"
@@ -190,7 +183,7 @@
                                        VerticalAlignment="Center" Margin="0,0,10,0"/>
                             <Ellipse x:Name="DiskDot" Width="8" Height="8" Fill="#FFF9A825"
                                      VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBlock x:Name="DiskLegend" Text="C: Q --"
+                            <TextBlock x:Name="DiskLegend" Text="C: --%"
                                        Foreground="#FFCDD6F4" FontSize="10"
                                        FontFamily="Consolas, Courier New"
                                        VerticalAlignment="Center" Margin="0,0,10,0"/>

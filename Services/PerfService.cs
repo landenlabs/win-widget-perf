@@ -5,7 +5,7 @@ using System.IO;
 namespace WinWidgetPerf.Services;
 
 /// <summary>
-/// Collects live CPU load and per-drive disk queue length using Windows
+/// Collects live CPU load and per-drive disk active-time percentage using Windows
 /// performance counters. The CPU counter is shared; disk counters are created
 /// per drive on demand and cached. All access is guarded — a missing or failing
 /// counter simply yields 0 rather than throwing.
@@ -42,10 +42,11 @@ public sealed class PerfService : IDisposable
     }
 
     /// <summary>
-    /// Average disk queue length for the given drive letter (e.g. "C").
-    /// Returns 0 if the counter is unavailable.
+    /// Percent of time the given drive letter (e.g. "C") was active/busy (0–100),
+    /// matching Task Manager's disk "% Utilization" semantics. Returns 0 if the
+    /// counter is unavailable.
     /// </summary>
-    public double GetDiskQueue(string driveLetter)
+    public double GetDiskActivePercent(string driveLetter)
     {
         string instance = NormalizeInstance(driveLetter);
         lock (_gate)
@@ -54,7 +55,7 @@ public sealed class PerfService : IDisposable
             {
                 try
                 {
-                    counter = new PerformanceCounter("LogicalDisk", "Avg. Disk Queue Length", instance);
+                    counter = new PerformanceCounter("LogicalDisk", "% Idle Time", instance);
                     counter.NextValue(); // prime
                     _diskCounters[instance] = counter;
                 }
@@ -64,7 +65,7 @@ public sealed class PerfService : IDisposable
                 }
             }
 
-            try { return Math.Max(0, counter.NextValue()); }
+            try { return Math.Clamp(100 - counter.NextValue(), 0, 100); }
             catch { return 0; }
         }
     }

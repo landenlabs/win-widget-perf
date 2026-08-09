@@ -23,11 +23,8 @@ public class WidgetSettings
     /// <summary>Total span of data shown across the chart, in seconds (default 2 minutes).</summary>
     public int DurationSeconds { get; set; } = 120;
 
-    /// <summary>Drive letter whose disk queue is charted (e.g. "C").</summary>
+    /// <summary>Drive letter whose disk activity is charted (e.g. "C").</summary>
     public string DiskDrive { get; set; } = "C";
-
-    /// <summary>Disk queue length that maps to the full chart height.</summary>
-    public double DiskQueueScale { get; set; } = 4.0;
 
     public bool ShowTitle { get; set; } = true;
     public bool ShowLegend { get; set; } = true;

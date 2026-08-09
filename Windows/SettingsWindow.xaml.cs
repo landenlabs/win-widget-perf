@@ -105,13 +105,6 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private double _diskQueueScale;
-    public double DiskQueueScale
-    {
-        get => _diskQueueScale;
-        set { _diskQueueScale = value; OnPropertyChanged(); LivePreviewChartSettings(); }
-    }
-
     private string _selectedDrive = "C";
     public string SelectedDrive
     {
@@ -173,7 +166,6 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     private readonly int _origFontScalePercent;
     private readonly int _origUpdateInterval;
     private readonly int _origDurationSeconds;
-    private readonly double _origDiskQueueScale;
     private readonly string _origDrive;
     private readonly double _origWidth;
     private readonly double _origHeight;
@@ -223,7 +215,6 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _origFontScalePercent = widget.FontScalePercent > 0 ? widget.FontScalePercent : 100;
         _origUpdateInterval   = widget.UpdateInterval > 0 ? widget.UpdateInterval : 1000;
         _origDurationSeconds  = widget.DurationSeconds > 0 ? widget.DurationSeconds : 120;
-        _origDiskQueueScale   = widget.DiskQueueScale > 0 ? widget.DiskQueueScale : 4.0;
         _origDrive            = string.IsNullOrEmpty(widget.DiskDrive) ? "C" : widget.DiskDrive;
         _origWidth            = widget.Width > 0 ? widget.Width : 340;
         _origHeight           = widget.Height > 0 ? widget.Height : 160;
@@ -249,7 +240,6 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _fontScalePercent = _origFontScalePercent;
         _updateInterval   = _origUpdateInterval;
         _durationSeconds  = _origDurationSeconds;
-        _diskQueueScale   = _origDiskQueueScale;
         _selectedDrive    = Drives.Contains(_origDrive) ? _origDrive : (Drives.FirstOrDefault() ?? "C");
         _widgetWidth      = (int)Math.Round(_origWidth);
         _widgetHeight     = (int)Math.Round(_origHeight);
@@ -274,7 +264,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
             nameof(NetColorHex), nameof(NetColorBrush),
             nameof(BgOpacityPercent), nameof(FontScalePercent),
             nameof(UpdateInterval), nameof(DurationSeconds), nameof(DurationHint),
-            nameof(DiskQueueScale), nameof(SelectedDrive),
+            nameof(SelectedDrive),
             nameof(WidgetWidth), nameof(WidgetHeight),
             nameof(EmbedInWallpaper), nameof(AutoStartEnabled),
             nameof(ShowTitle), nameof(ShowLegend), nameof(ShowGrid), nameof(ShowTopProcess), nameof(ShowNetwork),
@@ -318,7 +308,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _showDriveSelector, _showDiskSpaceBar);
     private void LivePreviewChartSettings() =>
         _livePreviewTarget?.ApplyChartSettings(_selectedDrive, Math.Max(1, _durationSeconds),
-            _diskQueueScale > 0 ? _diskQueueScale : 1.0, Math.Max(100, _updateInterval));
+            Math.Max(100, _updateInterval));
     private void LivePreviewSize()
     {
         if (_widgetWidth >= 160 && _widgetHeight >= 80)
@@ -500,7 +490,6 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _widget.FontScalePercent     = _fontScalePercent;
         _widget.UpdateInterval       = Math.Max(100, _updateInterval);
         _widget.DurationSeconds      = Math.Max(1, _durationSeconds);
-        _widget.DiskQueueScale       = _diskQueueScale > 0 ? _diskQueueScale : 4.0;
         _widget.DiskDrive            = _selectedDrive;
         _widget.Width                = Math.Max(160, _widgetWidth);
         _widget.Height               = Math.Max(80, _widgetHeight);
@@ -543,7 +532,6 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _widget.ShowNetwork          = _origShowNetwork;
         _widget.DiskDrive            = _origDrive;
         _widget.DurationSeconds      = _origDurationSeconds;
-        _widget.DiskQueueScale       = _origDiskQueueScale;
         _widget.UpdateInterval       = _origUpdateInterval;
 
         _livePreviewTarget?.ApplyBackground(_origBgColor, _origBgOpacityPercent / 100.0);
@@ -551,8 +539,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _livePreviewTarget?.ApplyFontScale(_origFontScalePercent);
         _livePreviewTarget?.ApplyVisibility(_origShowTitle, _origShowLegend, _origShowGrid, _origShowTopProcess,
             _origShowNetwork, _origShowDriveSelector, _origShowDiskSpaceBar);
-        _livePreviewTarget?.ApplyChartSettings(_origDrive, _origDurationSeconds,
-            _origDiskQueueScale, _origUpdateInterval);
+        _livePreviewTarget?.ApplyChartSettings(_origDrive, _origDurationSeconds, _origUpdateInterval);
         _livePreviewTarget?.ApplySize(_origWidth, _origHeight);
         if (_livePreviewTarget != null)
         {

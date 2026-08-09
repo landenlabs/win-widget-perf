@@ -1,6 +1,7 @@
 // Copyright (c) 2026 LanDen Labs - Dennis Lang
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -29,6 +30,12 @@ public partial class WidgetWindow : Window
     private SolidColorBrush _netBrush = new(System.Windows.Media.Colors.LightGreen);
 
     private double _diskUsagePercent;
+    private string _topProcessText = "";
+    private string? _topProcessToolTip;
+
+    private static readonly SolidColorBrush TitleNameBrush = MakeFrozenBrush(0xAA, 0xFF, 0xFF, 0xFF);
+    private static readonly SolidColorBrush TitleStatsBrush = MakeFrozenBrush(0x88, 0xFF, 0xFF, 0xFF);
+    private static readonly SolidColorBrush TitleProcBrush = MakeFrozenBrush(0xFF, 0xE6, 0xB8, 0x60);
 
     private bool _isEmbedded;
     private int _embeddedX;
@@ -200,10 +207,10 @@ public partial class WidgetWindow : Window
     private void Sample()
     {
         double cpu = _perfService.GetCpuLoad();
-        double disk = _perfService.GetDiskQueue(_settings.DiskDrive);
+        double disk = _perfService.GetDiskActivePercent(_settings.DiskDrive);
         double net = _settings.ShowNetwork ? _networkService.GetLoadPercent() : 0;
 
-        _history.Enqueue(new PerfSample { Cpu = cpu, DiskQueue = disk, Network = net });
+        _history.Enqueue(new PerfSample { Cpu = cpu, DiskActive = disk, Network = net });
         int cap = Capacity;
         while (_history.Count > cap) _history.Dequeue();
 
@@ -214,7 +221,7 @@ public partial class WidgetWindow : Window
         }
 
         CpuLegend.Text = $"CPU {cpu:0}%";
-        DiskLegend.Text = $"{NormalizeDrive(_settings.DiskDrive)}: Q {disk:0.0}";
+        DiskLegend.Text = $"{NormalizeDrive(_settings.DiskDrive)}: {disk:0}%";
         NetLegend.Text = $"Net {net:0}%";
         if (_settings.ShowNetwork)
         {
@@ -223,6 +230,7 @@ public partial class WidgetWindow : Window
         }
 
         UpdateTopProcess();
+        RefreshTitleLine(cpu, disk, net);
         DrawChart();
     }
 
@@ -230,23 +238,43 @@ public partial class WidgetWindow : Window
     {
         if (!_settings.ShowTopProcess)
         {
-            ProcText.Text = "";
-            ProcText.ToolTip = null;
+            _topProcessText = "";
+            _topProcessToolTip = null;
             return;
         }
 
         var tops = _processCpuService.GetTopProcesses(Math.Max(1, _settings.DurationSeconds), 3);
         if (tops.Count == 0)
         {
-            ProcText.Text = "";
-            ProcText.ToolTip = null;
+            _topProcessText = "";
+            _topProcessToolTip = null;
             return;
         }
 
-        ProcText.Text = $"🔥 {tops[0].Name} {tops[0].Percent:0}%";
-        ProcText.ToolTip =
+        _topProcessText = $"🔥 {tops[0].Name} {tops[0].Percent:0}%";
+        _topProcessToolTip =
             $"Top CPU — rolling {FormatDuration(_settings.DurationSeconds)}\n" +
             string.Join("\n", tops.Select((t, i) => $"{i + 1}. {t.Name}  {t.Percent:0.#}%"));
+    }
+
+    /// <summary>
+    /// Rebuilds the title-row text: widget name, then live CPU/disk/network values, then
+    /// the top-process indicator. TextTrimming clips this from the right as the icon panel
+    /// (shown on hover) or a narrow widget width leaves less room for it.
+    /// </summary>
+    private void RefreshTitleLine(double cpu, double disk, double net)
+    {
+        TitleText.Inlines.Clear();
+        TitleText.Inlines.Add(new Run("📈 Performance") { Foreground = TitleNameBrush });
+
+        string stats = $"   CPU {cpu:0}%  {NormalizeDrive(_settings.DiskDrive)}: {disk:0}%";
+        if (_settings.ShowNetwork) stats += $"  Net {net:0}%";
+        TitleText.Inlines.Add(new Run(stats) { Foreground = TitleStatsBrush });
+
+        if (!string.IsNullOrEmpty(_topProcessText))
+            TitleText.Inlines.Add(new Run("   " + _topProcessText) { Foreground = TitleProcBrush });
+
+        TitleText.ToolTip = _topProcessToolTip;
     }
 
     private static string FormatDuration(int seconds)
@@ -291,7 +319,6 @@ public partial class WidgetWindow : Window
 
         int cap = Capacity;
         var samples = _history.ToArray();
-        double scale = _settings.DiskQueueScale <= 0 ? 1.0 : _settings.DiskQueueScale;
 
         bool showNet = _settings.ShowNetwork;
         var cpuPts = new PointCollection(n);
@@ -302,7 +329,7 @@ public partial class WidgetWindow : Window
         {
             double x = cap <= 1 ? w : w * (j + (cap - n)) / (double)(cap - 1);
             double cpuY = h * (1 - Math.Clamp(samples[j].Cpu / 100.0, 0, 1));
-            double diskY = h * (1 - Math.Clamp(samples[j].DiskQueue / scale, 0, 1));
+            double diskY = h * (1 - Math.Clamp(samples[j].DiskActive / 100.0, 0, 1));
             cpuPts.Add(new System.Windows.Point(x, cpuY));
             diskPts.Add(new System.Windows.Point(x, diskY));
             netPts?.Add(new System.Windows.Point(x, h * (1 - Math.Clamp(samples[j].Network / 100.0, 0, 1))));
@@ -411,6 +438,13 @@ public partial class WidgetWindow : Window
         NetDot.Fill = _netBrush;
     }
 
+    private static SolidColorBrush MakeFrozenBrush(byte a, byte r, byte g, byte b)
+    {
+        var brush = new SolidColorBrush(System.Windows.Media.Color.FromArgb(a, r, g, b));
+        brush.Freeze();
+        return brush;
+    }
+
     private static SolidColorBrush MakeBrush(string hex, System.Windows.Media.Color fallback)
     {
         try
@@ -469,7 +503,6 @@ public partial class WidgetWindow : Window
     {
         double factor = Math.Max(0.25, percent / 100.0);
         TitleText.FontSize = Math.Max(6, 11 * factor);
-        ProcText.FontSize = Math.Max(6, 11 * factor);
         CpuLegend.FontSize = Math.Max(6, 10 * factor);
         DiskLegend.FontSize = Math.Max(6, 10 * factor);
     }
@@ -503,7 +536,6 @@ public partial class WidgetWindow : Window
     {
         TitleSection.Visibility = _settings.ShowTitle ? Visibility.Visible : Visibility.Collapsed;
         LegendPanel.Visibility  = _settings.ShowLegend ? Visibility.Visible : Visibility.Collapsed;
-        ProcText.Visibility     = _settings.ShowTopProcess ? Visibility.Visible : Visibility.Collapsed;
 
         var netVisibility = _settings.ShowNetwork ? Visibility.Visible : Visibility.Collapsed;
         NetDot.Visibility    = netVisibility;
@@ -524,11 +556,10 @@ public partial class WidgetWindow : Window
     }
 
     /// <summary>Applies sampling-related settings and rebuilds the history buffer/timer.</summary>
-    public void ApplyChartSettings(string drive, int durationSeconds, double queueScale, int updateInterval)
+    public void ApplyChartSettings(string drive, int durationSeconds, int updateInterval)
     {
         _settings.DiskDrive = drive;
         _settings.DurationSeconds = durationSeconds;
-        _settings.DiskQueueScale = queueScale;
         _settings.UpdateInterval = updateInterval;
 
         if (_updateTimer != null)

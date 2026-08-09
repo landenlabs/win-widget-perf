@@ -164,15 +164,6 @@
                                        Text="{Binding DurationHint}"/>
                         </StackPanel>
 
-                        <!-- Disk queue scale -->
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
-                            <TextBlock Text="Disk Queue Max:" Foreground="#FFA6ADC8" VerticalAlignment="Center" Margin="0,0,12,0" Width="140"/>
-                            <TextBox Style="{StaticResource DarkTextBox}" Width="80"
-                                     Text="{Binding DiskQueueScale, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                            <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Foreground="#FF6C7086" FontSize="11"
-                                       Text="queue length mapped to full height"/>
-                        </StackPanel>
-
                         <!-- Update interval -->
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
                             <TextBlock Text="Sample Interval:" Foreground="#FFA6ADC8" VerticalAlignment="Center" Margin="0,0,12,0" Width="140"/>
