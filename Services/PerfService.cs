@@ -1,6 +1,7 @@
 // Copyright (c) 2026 LanDen Labs - Dennis Lang
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace WinWidgetPerf.Services;
 
@@ -71,6 +72,40 @@ public sealed class PerfService : IDisposable
     }
 
     /// <summary>Percent of disk space used on the given drive (0–100). Returns 0 if unavailable.</summary>
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    private struct MemoryStatusEx
+    {
+        public uint dwLength;
+        public uint dwMemoryLoad;
+        public ulong ullTotalPhys;
+        public ulong ullAvailPhys;
+        public ulong ullTotalPageFile;
+        public ulong ullAvailPageFile;
+        public ulong ullTotalVirtual;
+        public ulong ullAvailVirtual;
+        public ulong ullAvailExtendedVirtual;
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GlobalMemoryStatusEx(ref MemoryStatusEx buffer);
+
+    /// <summary>
+    /// Physical memory in use (total minus available, so cached/standby pages count as free),
+    /// as a percentage, plus used and total bytes. Returns zeros on failure.
+    /// </summary>
+    public static (double Percent, ulong UsedBytes, ulong TotalBytes) GetMemoryUsage()
+    {
+        try
+        {
+            var status = new MemoryStatusEx { dwLength = (uint)Marshal.SizeOf<MemoryStatusEx>() };
+            if (!GlobalMemoryStatusEx(ref status) || status.ullTotalPhys == 0) return (0, 0, 0);
+            ulong used = status.ullTotalPhys - status.ullAvailPhys;
+            return (status.dwMemoryLoad, used, status.ullTotalPhys);
+        }
+        catch { return (0, 0, 0); }
+    }
+
     public static double GetDiskUsagePercent(string driveLetter)
     {
         try

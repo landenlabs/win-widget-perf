@@ -39,8 +39,11 @@ public class WidgetSettings
     /// <summary>Show a row of drive-letter buttons below the chart for quick drive switching.</summary>
     public bool ShowDriveSelector { get; set; } = false;
 
-    /// <summary>Show a narrow right-side bar indicating percent disk space used on the tracked drive.</summary>
+    /// <summary>Show a narrow left-side bar indicating percent disk space used on the tracked drive.</summary>
     public bool ShowDiskSpaceBar { get; set; } = false;
+
+    /// <summary>Show a narrow right-side bar indicating percent of physical memory in use.</summary>
+    public bool ShowMemoryBar { get; set; } = false;
 
     public bool EmbedInWallpaper { get; set; } = true;
 
@@ -52,6 +55,7 @@ public class WidgetSettings
     public string CpuColor { get; set; } = "#FF89B4FA";   // blue
     public string DiskColor { get; set; } = "#FFF9A825";  // amber
     public string NetworkColor { get; set; } = "#FFA6E3A1";  // green
+    public string MemoryColor { get; set; } = "#FFCBA6F7";   // mauve
 
     /// <summary>
     /// Stores positions for different display configurations.

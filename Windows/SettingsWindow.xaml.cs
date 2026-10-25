@@ -66,6 +66,15 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     private SolidColorBrush? _netColorBrush;
     public SolidColorBrush NetColorBrush => _netColorBrush ??= ToBrush(_netColorHex);
 
+    private string _memColorHex = "#FFCBA6F7";
+    public string MemColorHex
+    {
+        get => _memColorHex;
+        set { _memColorHex = value; _memColorBrush = null; OnPropertyChanged(); OnPropertyChanged(nameof(MemColorBrush)); LivePreviewChartColors(); }
+    }
+    private SolidColorBrush? _memColorBrush;
+    public SolidColorBrush MemColorBrush => _memColorBrush ??= ToBrush(_memColorHex);
+
     // ── Sliders / numerics ──────────────────────────────────────────────────
 
     private int _bgOpacityPercent;
@@ -155,6 +164,9 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     private bool _showDiskSpaceBar;
     public bool ShowDiskSpaceBar { get => _showDiskSpaceBar; set { _showDiskSpaceBar = value; OnPropertyChanged(); LivePreviewVisibility(); } }
 
+    private bool _showMemoryBar;
+    public bool ShowMemoryBar { get => _showMemoryBar; set { _showMemoryBar = value; OnPropertyChanged(); LivePreviewVisibility(); } }
+
     // ── Originals for Cancel restore ────────────────────────────────────────
 
     private readonly string _origBgColor;
@@ -162,6 +174,8 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     private readonly string _origCpuColor;
     private readonly string _origDiskColor;
     private readonly string _origNetColor;
+    private readonly string _origMemColor;
+    private readonly bool _origShowMemoryBar;
     private readonly int _origBgOpacityPercent;
     private readonly int _origFontScalePercent;
     private readonly int _origUpdateInterval;
@@ -210,6 +224,8 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _origCpuColor         = Fallback(widget.CpuColor, "#FF89B4FA");
         _origDiskColor        = Fallback(widget.DiskColor, "#FFF9A825");
         _origNetColor         = Fallback(widget.NetworkColor, "#FFA6E3A1");
+        _origMemColor         = Fallback(widget.MemoryColor, "#FFCBA6F7");
+        _origShowMemoryBar    = widget.ShowMemoryBar;
         _origBgOpacityPercent = (int)Math.Round(widget.BackgroundOpacity * 100);
         if (_origBgOpacityPercent == 0) _origBgOpacityPercent = 80;
         _origFontScalePercent = widget.FontScalePercent > 0 ? widget.FontScalePercent : 100;
@@ -236,6 +252,8 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _cpuColorHex      = _origCpuColor;
         _diskColorHex     = _origDiskColor;
         _netColorHex      = _origNetColor;
+        _memColorHex      = _origMemColor;
+        _showMemoryBar    = _origShowMemoryBar;
         _bgOpacityPercent = _origBgOpacityPercent;
         _fontScalePercent = _origFontScalePercent;
         _updateInterval   = _origUpdateInterval;
@@ -262,6 +280,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
             nameof(CpuColorHex), nameof(CpuColorBrush),
             nameof(DiskColorHex), nameof(DiskColorBrush),
             nameof(NetColorHex), nameof(NetColorBrush),
+            nameof(MemColorHex), nameof(MemColorBrush), nameof(ShowMemoryBar),
             nameof(BgOpacityPercent), nameof(FontScalePercent),
             nameof(UpdateInterval), nameof(DurationSeconds), nameof(DurationHint),
             nameof(SelectedDrive),
@@ -288,6 +307,8 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     private void DiskColorSwatch_Click(object sender, RoutedEventArgs e) => PickColor(_diskColorHex, hex => DiskColorHex = hex);
     private void NetColorSwatch_Click(object sender, MouseButtonEventArgs e) => PickColor(_netColorHex, hex => NetColorHex = hex);
     private void NetColorSwatch_Click(object sender, RoutedEventArgs e) => PickColor(_netColorHex, hex => NetColorHex = hex);
+    private void MemColorSwatch_Click(object sender, MouseButtonEventArgs e) => PickColor(_memColorHex, hex => MemColorHex = hex);
+    private void MemColorSwatch_Click(object sender, RoutedEventArgs e) => PickColor(_memColorHex, hex => MemColorHex = hex);
 
     private void PickColor(string current, Action<string> apply)
     {
@@ -302,10 +323,10 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     // ── Live preview ──────────────────────────────────────────────────────────
 
     private void LivePreviewBackground() => _livePreviewTarget?.ApplyBackground(_bgColorHex, _bgOpacityPercent / 100.0);
-    private void LivePreviewChartColors() => _livePreviewTarget?.ApplyChartColors(_chartBgColorHex, _cpuColorHex, _diskColorHex, _netColorHex);
+    private void LivePreviewChartColors() => _livePreviewTarget?.ApplyChartColors(_chartBgColorHex, _cpuColorHex, _diskColorHex, _netColorHex, _memColorHex);
     private void LivePreviewVisibility() => _livePreviewTarget?.ApplyVisibility(
         _showTitle, _showLegend, _showGrid, _showTopProcess, _showNetwork,
-        _showDriveSelector, _showDiskSpaceBar);
+        _showDriveSelector, _showDiskSpaceBar, _showMemoryBar);
     private void LivePreviewChartSettings() =>
         _livePreviewTarget?.ApplyChartSettings(_selectedDrive, Math.Max(1, _durationSeconds),
             Math.Max(100, _updateInterval));
@@ -487,7 +508,8 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _widget.CpuColor             = _cpuColorHex;
         _widget.DiskColor            = _diskColorHex;
         _widget.NetworkColor         = _netColorHex;
-        _widget.FontScalePercent     = _fontScalePercent;
+        _widget.MemoryColor          = _memColorHex;
+        _widget.FontScalePercent    = _fontScalePercent;
         _widget.UpdateInterval       = Math.Max(100, _updateInterval);
         _widget.DurationSeconds      = Math.Max(1, _durationSeconds);
         _widget.DiskDrive            = _selectedDrive;
@@ -501,6 +523,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _widget.ShowNetwork       = _showNetwork;
         _widget.ShowDriveSelector = _showDriveSelector;
         _widget.ShowDiskSpaceBar  = _showDiskSpaceBar;
+        _widget.ShowMemoryBar     = _showMemoryBar;
 
         var config = DisplayService.GetCurrentDisplayConfiguration();
         DisplayService.SaveDisplayPosition(_widget, config, (int)_editPosX, (int)_editPosY);
@@ -525,6 +548,8 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _widget.CpuColor             = _origCpuColor;
         _widget.DiskColor            = _origDiskColor;
         _widget.NetworkColor         = _origNetColor;
+        _widget.MemoryColor          = _origMemColor;
+        _widget.ShowMemoryBar        = _origShowMemoryBar;
         _widget.ShowTitle            = _origShowTitle;
         _widget.ShowLegend           = _origShowLegend;
         _widget.ShowGrid             = _origShowGrid;
@@ -535,10 +560,10 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _widget.UpdateInterval       = _origUpdateInterval;
 
         _livePreviewTarget?.ApplyBackground(_origBgColor, _origBgOpacityPercent / 100.0);
-        _livePreviewTarget?.ApplyChartColors(_origChartBgColor, _origCpuColor, _origDiskColor, _origNetColor);
+        _livePreviewTarget?.ApplyChartColors(_origChartBgColor, _origCpuColor, _origDiskColor, _origNetColor, _origMemColor);
         _livePreviewTarget?.ApplyFontScale(_origFontScalePercent);
         _livePreviewTarget?.ApplyVisibility(_origShowTitle, _origShowLegend, _origShowGrid, _origShowTopProcess,
-            _origShowNetwork, _origShowDriveSelector, _origShowDiskSpaceBar);
+            _origShowNetwork, _origShowDriveSelector, _origShowDiskSpaceBar, _origShowMemoryBar);
         _livePreviewTarget?.ApplyChartSettings(_origDrive, _origDurationSeconds, _origUpdateInterval);
         _livePreviewTarget?.ApplySize(_origWidth, _origHeight);
         if (_livePreviewTarget != null)

@@ -28,8 +28,11 @@ public partial class WidgetWindow : Window
     private SolidColorBrush _cpuBrush = new(System.Windows.Media.Colors.CornflowerBlue);
     private SolidColorBrush _diskBrush = new(System.Windows.Media.Colors.Orange);
     private SolidColorBrush _netBrush = new(System.Windows.Media.Colors.LightGreen);
+    private SolidColorBrush _memBrush = new(System.Windows.Media.Color.FromRgb(0xCB, 0xA6, 0xF7));
 
     private double _diskUsagePercent;
+    private double _memUsagePercent;
+    private ulong _memUsedBytes, _memTotalBytes;
     private string _topProcessText = "";
     private string? _topProcessToolTip;
 
@@ -220,6 +223,12 @@ public partial class WidgetWindow : Window
             DrawDiskSpaceBar();
         }
 
+        if (_settings.ShowMemoryBar)
+        {
+            (_memUsagePercent, _memUsedBytes, _memTotalBytes) = PerfService.GetMemoryUsage();
+            DrawMemoryBar();
+        }
+
         CpuLegend.Text = $"CPU {cpu:0}%";
         DiskLegend.Text = $"{NormalizeDrive(_settings.DiskDrive)}: {disk:0}%";
         NetLegend.Text = $"Net {net:0}%";
@@ -358,6 +367,31 @@ public partial class WidgetWindow : Window
 
     private void ChartCanvas_SizeChanged(object sender, SizeChangedEventArgs e) => DrawChart();
 
+    private void MemoryCanvas_SizeChanged(object sender, SizeChangedEventArgs e) => DrawMemoryBar();
+
+    private void DrawMemoryBar()
+    {
+        double w = MemoryCanvas.ActualWidth;
+        double h = MemoryCanvas.ActualHeight;
+        MemoryCanvas.Children.Clear();
+        if (w <= 0 || h <= 0) return;
+
+        double barH = h * Math.Clamp(_memUsagePercent / 100.0, 0, 1);
+        var rect = new System.Windows.Shapes.Rectangle
+        {
+            Width = w,
+            Height = Math.Max(1, barH),
+            Fill = _memBrush
+        };
+        System.Windows.Controls.Canvas.SetLeft(rect, 0);
+        System.Windows.Controls.Canvas.SetTop(rect, h - barH);
+        MemoryCanvas.Children.Add(rect);
+
+        const double gb = 1024.0 * 1024 * 1024;
+        MemoryBarBorder.ToolTip =
+            $"Memory: {_memUsedBytes / gb:0.0} / {_memTotalBytes / gb:0.0} GB ({_memUsagePercent:0}%)";
+    }
+
     private void DiskSpaceCanvas_SizeChanged(object sender, SizeChangedEventArgs e) => DrawDiskSpaceBar();
 
     private void DrawDiskSpaceBar()
@@ -370,17 +404,11 @@ public partial class WidgetWindow : Window
         double fraction = Math.Clamp(_diskUsagePercent / 100.0, 0, 1);
         double barH = h * fraction;
 
-        var color = fraction < 0.70
-            ? System.Windows.Media.Color.FromRgb(0xA6, 0xE3, 0xA1)   // green
-            : fraction < 0.90
-                ? System.Windows.Media.Color.FromRgb(0xF9, 0xA8, 0x25) // amber
-                : System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8); // red
-
         var rect = new System.Windows.Shapes.Rectangle
         {
             Width = w,
             Height = Math.Max(1, barH),
-            Fill = new SolidColorBrush(color)
+            Fill = _diskBrush   // same color as the disk activity graph line
         };
         System.Windows.Controls.Canvas.SetLeft(rect, 0);
         System.Windows.Controls.Canvas.SetTop(rect, h - barH);
@@ -397,7 +425,8 @@ public partial class WidgetWindow : Window
         var drives = PerfService.GetFixedDrives();
         string active = NormalizeDrive(_settings.DiskDrive);
 
-        var activeBg   = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xAA, 0x89, 0xB4, 0xFA));
+        var activeBg   = _diskBrush;   // same color as the disk activity graph line
+        var activeFg   = System.Windows.Media.Brushes.Black;   // contrast against the disk color
         var inactiveBg = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF));
 
         foreach (var drive in drives)
@@ -409,6 +438,7 @@ public partial class WidgetWindow : Window
                 Style      = (Style)FindResource("DriveButtonStyle"),
                 Background = drive == active ? activeBg : inactiveBg,
             };
+            if (drive == active) btn.Foreground = activeFg;
             btn.Click += DriveButton_Click;
             DriveSelectorPanel.Children.Add(btn);
         }
@@ -436,6 +466,7 @@ public partial class WidgetWindow : Window
         CpuDot.Fill = _cpuBrush;
         DiskDot.Fill = _diskBrush;
         NetDot.Fill = _netBrush;
+        _memBrush = MakeBrush(_settings.MemoryColor, System.Windows.Media.Color.FromRgb(0xCB, 0xA6, 0xF7));
     }
 
     private static SolidColorBrush MakeFrozenBrush(byte a, byte r, byte g, byte b)
@@ -488,15 +519,19 @@ public partial class WidgetWindow : Window
         ApplyBackgroundInternal(opacity);
     }
 
-    public void ApplyChartColors(string chartBgHex, string cpuHex, string diskHex, string netHex)
+    public void ApplyChartColors(string chartBgHex, string cpuHex, string diskHex, string netHex, string memHex)
     {
         _settings.ChartBackgroundColor = chartBgHex;
         _settings.CpuColor = cpuHex;
         _settings.DiskColor = diskHex;
         _settings.NetworkColor = netHex;
+        _settings.MemoryColor = memHex;
         ApplyChartBackgroundInternal();
         RebuildBrushes();
         DrawChart();
+        if (_settings.ShowDiskSpaceBar) DrawDiskSpaceBar();
+        if (_settings.ShowMemoryBar) DrawMemoryBar();
+        if (_settings.ShowDriveSelector) BuildDriveSelector();
     }
 
     public void ApplyFontScale(int percent)
@@ -508,8 +543,10 @@ public partial class WidgetWindow : Window
     }
 
     public void ApplyVisibility(bool showTitle, bool showLegend, bool showGrid, bool showTopProcess,
-                                bool showNetwork, bool showDriveSelector, bool showDiskSpaceBar)
+                                bool showNetwork, bool showDriveSelector, bool showDiskSpaceBar,
+                                bool showMemoryBar)
     {
+        _settings.ShowMemoryBar     = showMemoryBar;
         _settings.ShowTitle         = showTitle;
         _settings.ShowLegend        = showLegend;
         _settings.ShowGrid          = showGrid;
@@ -542,6 +579,8 @@ public partial class WidgetWindow : Window
         NetLegend.Visibility = netVisibility;
 
         DiskSpaceBarBorder.Visibility = _settings.ShowDiskSpaceBar
+            ? Visibility.Visible : Visibility.Collapsed;
+        MemoryBarBorder.Visibility = _settings.ShowMemoryBar
             ? Visibility.Visible : Visibility.Collapsed;
 
         if (_settings.ShowDriveSelector)

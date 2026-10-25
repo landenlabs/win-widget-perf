@@ -48,9 +48,10 @@
                 <!-- Info -->
                 <StackPanel Margin="0,14,0,0">
                     <TextBlock TextWrapping="Wrap" Foreground="#FFBAC2DE" LineHeight="22">
-                        Charts real-time CPU load and disk queue activity as a transparent
-                        stripchart overlay on your Windows desktop. Both metrics share one
-                        scrolling chart, drawn in distinct colors.
+                        Charts real-time CPU load, disk activity and network traffic as a
+                        transparent stripchart overlay on your Windows desktop. The three
+                        metrics share one scrolling chart, drawn in distinct colors. Optional
+                        side bars show disk space used (left) and memory in use (right).
                     </TextBlock>
                     <TextBlock Margin="0,12,0,0" Foreground="#FFBAC2DE" FontSize="11">
                         <Run>Created by: LanDen Labs (2026)</Run>
@@ -62,7 +63,7 @@
                     </TextBlock>
                     <TextBlock Margin="0,12,0,0" Foreground="#FF6C7086" FontSize="11">
                         Metrics powered by Windows performance counters
-                        (Processor &amp; LogicalDisk).
+                        (Processor, LogicalDisk &amp; network interfaces) and the Windows memory status API.
                     </TextBlock>
                 </StackPanel>
 
@@ -96,11 +97,23 @@
                     </TextBlock>
                     <TextBlock FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0">
                         <Run Foreground="#FFF9A825" FontWeight="SemiBold">Disk Q</Run>
-                        <Run Foreground="#FFA6ADC8"> — average disk queue length for the selected drive, scaled so the configurable max maps to full height.</Run>
+                        <Run Foreground="#FFA6ADC8"> — activity for the selected drive, as a percentage of chart height.</Run>
+                    </TextBlock>
+                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0">
+                        <Run Foreground="#FFA6E3A1" FontWeight="SemiBold">Net</Run>
+                        <Run Foreground="#FFA6ADC8"> — network throughput (send + receive) as a percentage of the highest rate the widget has observed, so 100% means your busiest moment so far. Hover the legend for the current and learned maximum rates.</Run>
+                    </TextBlock>
+                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0">
+                        <Run Foreground="#FFCBA6F7" FontWeight="SemiBold">Memory bar</Run>
+                        <Run Foreground="#FFA6ADC8"> — the optional narrow bar on the right shows physical RAM in use, filling from the bottom (0–100%). Cached memory Windows can reclaim counts as free, matching Task Manager's "In use". Hover for used / total GB.</Run>
+                    </TextBlock>
+                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0">
+                        <Run Foreground="#FFF9A825" FontWeight="SemiBold">Disk space bar</Run>
+                        <Run Foreground="#FFA6ADC8"> — the optional bar on the left, above the drive letters, shows how full the selected drive is.</Run>
                     </TextBlock>
                     <TextBlock FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"
                                Foreground="#FF6C7086">
-                        Chart duration and the disk drive are set in Settings.
+                        Chart duration, the disk drive, line colors and the side bars are set in Settings.
                     </TextBlock>
                     <TextBlock FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0">
                         <Run Foreground="#FFE6B860" FontWeight="SemiBold">🔥 Top process</Run>

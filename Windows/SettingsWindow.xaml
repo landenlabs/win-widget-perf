@@ -106,6 +106,21 @@
                                        Text="{Binding NetColorHex}"/>
                         </StackPanel>
 
+                        <!-- Memory bar color -->
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
+                            <TextBlock Text="Memory Bar:" Foreground="#FFA6ADC8" VerticalAlignment="Center" Margin="0,0,12,0" Width="120"/>
+                            <Border Width="42" Height="28" CornerRadius="4"
+                                    Background="{Binding MemColorBrush}"
+                                    BorderBrush="#FF454570" BorderThickness="1"
+                                    Cursor="Hand" Margin="0,0,12,0"
+                                    MouseLeftButtonDown="MemColorSwatch_Click"/>
+                            <Button Content="Change…" Style="{StaticResource SubtleButton}" Padding="10,5"
+                                    Click="MemColorSwatch_Click"/>
+                            <TextBlock Margin="12,0,0,0" VerticalAlignment="Center"
+                                       Foreground="#FF6C7086" FontSize="11" FontFamily="Consolas, Courier New"
+                                       Text="{Binding MemColorHex}"/>
+                        </StackPanel>
+
                         <!-- Opacity -->
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
                             <TextBlock Text="Opacity:" Foreground="#FFA6ADC8" VerticalAlignment="Center" Margin="0,0,12,0" Width="120"/>
@@ -201,8 +216,11 @@
                         <CheckBox Content="Show drive selector buttons below chart"
                                   IsChecked="{Binding ShowDriveSelector, Mode=TwoWay}"
                                   Foreground="#FFA6ADC8" Margin="0,8,0,0"/>
-                        <CheckBox Content="Show disk space bar (right side, % used)"
+                        <CheckBox Content="Show disk space bar (left side, % used)"
                                   IsChecked="{Binding ShowDiskSpaceBar, Mode=TwoWay}"
+                                  Foreground="#FFA6ADC8" Margin="0,8,0,0"/>
+                        <CheckBox Content="Show memory bar (right side, % of RAM in use)"
+                                  IsChecked="{Binding ShowMemoryBar, Mode=TwoWay}"
                                   Foreground="#FFA6ADC8" Margin="0,8,0,0"/>
                     </StackPanel>
                 </Border>
