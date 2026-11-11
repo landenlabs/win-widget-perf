@@ -187,26 +187,46 @@
                                     Orientation="Horizontal"
                                     HorizontalAlignment="Left"
                                     VerticalAlignment="Top"
-                                    Margin="6,4"
-                                    IsHitTestVisible="False">
-                            <Ellipse x:Name="CpuDot" Width="8" Height="8" Fill="#FF89B4FA"
-                                     VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBlock x:Name="CpuLegend" Text="CPU --%"
-                                       Foreground="#FFCDD6F4" FontSize="10"
-                                       FontFamily="Consolas, Courier New"
-                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <Ellipse x:Name="DiskDot" Width="8" Height="8" Fill="#FFF9A825"
-                                     VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBlock x:Name="DiskLegend" Text="C: --%"
-                                       Foreground="#FFCDD6F4" FontSize="10"
-                                       FontFamily="Consolas, Courier New"
-                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <Ellipse x:Name="NetDot" Width="8" Height="8" Fill="#FFA6E3A1"
-                                     VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBlock x:Name="NetLegend" Text="Net --%"
-                                       Foreground="#FFCDD6F4" FontSize="10"
-                                       FontFamily="Consolas, Courier New"
-                                       VerticalAlignment="Center"/>
+                                    Margin="6,4">
+                            <!-- Each item toggles its series between line and filled-area. -->
+                            <StackPanel x:Name="CpuLegendItem" Orientation="Horizontal"
+                                        Background="Transparent" Cursor="Hand"
+                                        Tag="Cpu" Margin="0,0,10,0"
+                                        ToolTip="Click to toggle line / filled area"
+                                        MouseLeftButtonDown="LegendItem_MouseLeftButtonDown">
+                                <Ellipse x:Name="CpuDot" Width="8" Height="8" Fill="#FF89B4FA"
+                                         StrokeThickness="1.5"
+                                         VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBlock x:Name="CpuLegend" Text="CPU  --%"
+                                           Foreground="#FFCDD6F4" FontSize="10"
+                                           FontFamily="Consolas, Courier New"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel x:Name="DiskLegendItem" Orientation="Horizontal"
+                                        Background="Transparent" Cursor="Hand"
+                                        Tag="Disk" Margin="0,0,10,0"
+                                        ToolTip="Click to toggle line / filled area"
+                                        MouseLeftButtonDown="LegendItem_MouseLeftButtonDown">
+                                <Ellipse x:Name="DiskDot" Width="8" Height="8" Fill="#FFF9A825"
+                                         StrokeThickness="1.5"
+                                         VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBlock x:Name="DiskLegend" Text="C:  --%"
+                                           Foreground="#FFCDD6F4" FontSize="10"
+                                           FontFamily="Consolas, Courier New"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel x:Name="NetLegendItem" Orientation="Horizontal"
+                                        Background="Transparent" Cursor="Hand"
+                                        Tag="Net"
+                                        MouseLeftButtonDown="LegendItem_MouseLeftButtonDown">
+                                <Ellipse x:Name="NetDot" Width="8" Height="8" Fill="#FFA6E3A1"
+                                         StrokeThickness="1.5"
+                                         VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBlock x:Name="NetLegend" Text="Net  --%"
+                                           Foreground="#FFCDD6F4" FontSize="10"
+                                           FontFamily="Consolas, Courier New"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
                         </StackPanel>
                     </Grid>
                 </Border>

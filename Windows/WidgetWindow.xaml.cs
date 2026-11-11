@@ -229,13 +229,14 @@ public partial class WidgetWindow : Window
             DrawMemoryBar();
         }
 
-        CpuLegend.Text = $"CPU {cpu:0}%";
-        DiskLegend.Text = $"{NormalizeDrive(_settings.DiskDrive)}: {disk:0}%";
-        NetLegend.Text = $"Net {net:0}%";
+        CpuLegend.Text = $"CPU {Pct3(cpu)}";
+        DiskLegend.Text = $"{NormalizeDrive(_settings.DiskDrive)}: {Pct3(disk)}";
+        NetLegend.Text = $"Net {Pct3(net)}";
         if (_settings.ShowNetwork)
         {
             var (rate, max, label) = _networkService.GetDetail();
-            NetLegend.ToolTip = $"{label}\n{FormatRate(rate)} of {FormatRate(max)} learned max";
+            NetLegendItem.ToolTip = $"{label}\n{FormatRate(rate)} of {FormatRate(max)} learned max\n" +
+                                    "Click to toggle line / filled area";
         }
 
         UpdateTopProcess();
@@ -285,6 +286,10 @@ public partial class WidgetWindow : Window
 
         TitleText.ToolTip = _topProcessToolTip;
     }
+
+    /// <summary>Fixed-width "nnn%" (space-padded, clamped to 0–999) so the monospace legend doesn't shift.</summary>
+    private static string Pct3(double value) =>
+        $"{Math.Clamp(Math.Round(value), 0, 999),3:0}%";
 
     private static string FormatDuration(int seconds)
     {
@@ -345,24 +350,71 @@ public partial class WidgetWindow : Window
         }
 
         // Disk and network drawn first so CPU sits on top
-        ChartCanvas.Children.Add(new Polyline
-        {
-            Points = diskPts, Stroke = _diskBrush,
-            StrokeThickness = 1.5, StrokeLineJoin = PenLineJoin.Round
-        });
+        AddSeries(diskPts, _diskBrush, _settings.DiskFilled, h);
         if (netPts != null)
+            AddSeries(netPts, _netBrush, _settings.NetFilled, h);
+        AddSeries(cpuPts, _cpuBrush, _settings.CpuFilled, h);
+    }
+
+    /// <summary>
+    /// Adds one series to the chart: always the line, plus (when filled) a 50%-alpha
+    /// area closed down to the chart baseline beneath it.
+    /// </summary>
+    private void AddSeries(PointCollection pts, SolidColorBrush brush, bool filled, double h)
+    {
+        if (filled && pts.Count >= 2)
         {
-            ChartCanvas.Children.Add(new Polyline
-            {
-                Points = netPts, Stroke = _netBrush,
-                StrokeThickness = 1.5, StrokeLineJoin = PenLineJoin.Round
-            });
+            var area = new PointCollection(pts.Count + 2);
+            foreach (var p in pts) area.Add(p);
+            area.Add(new System.Windows.Point(pts[^1].X, h));
+            area.Add(new System.Windows.Point(pts[0].X, h));
+            ChartCanvas.Children.Add(new Polygon { Points = area, Fill = HalfAlpha(brush) });
         }
         ChartCanvas.Children.Add(new Polyline
         {
-            Points = cpuPts, Stroke = _cpuBrush,
+            Points = pts, Stroke = brush,
             StrokeThickness = 1.5, StrokeLineJoin = PenLineJoin.Round
         });
+    }
+
+    private static SolidColorBrush HalfAlpha(SolidColorBrush brush)
+    {
+        var c = brush.Color;
+        var b = new SolidColorBrush(System.Windows.Media.Color.FromArgb((byte)(c.A / 2), c.R, c.G, c.B));
+        b.Freeze();
+        return b;
+    }
+
+    // ── Legend toggles (line ↔ filled area) ──────────────────────────────────
+
+    private void LegendItem_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement { Tag: string series }) return;
+        switch (series)
+        {
+            case "Cpu":  _settings.CpuFilled  = !_settings.CpuFilled;  break;
+            case "Disk": _settings.DiskFilled = !_settings.DiskFilled; break;
+            case "Net":  _settings.NetFilled  = !_settings.NetFilled;  break;
+            default: return;
+        }
+        e.Handled = true;   // don't start a widget drag
+        SettingsService.Save(App.Settings);
+        UpdateLegendDots();
+        DrawChart();
+    }
+
+    /// <summary>Solid dot = line mode; half-alpha dot with solid ring = filled-area mode.</summary>
+    private void UpdateLegendDots()
+    {
+        StyleDot(CpuDot, _cpuBrush, _settings.CpuFilled);
+        StyleDot(DiskDot, _diskBrush, _settings.DiskFilled);
+        StyleDot(NetDot, _netBrush, _settings.NetFilled);
+    }
+
+    private static void StyleDot(Ellipse dot, SolidColorBrush brush, bool filled)
+    {
+        dot.Fill = filled ? HalfAlpha(brush) : brush;
+        dot.Stroke = filled ? brush : null;
     }
 
     private void ChartCanvas_SizeChanged(object sender, SizeChangedEventArgs e) => DrawChart();
@@ -463,9 +515,7 @@ public partial class WidgetWindow : Window
         _cpuBrush = MakeBrush(_settings.CpuColor, System.Windows.Media.Colors.CornflowerBlue);
         _diskBrush = MakeBrush(_settings.DiskColor, System.Windows.Media.Colors.Orange);
         _netBrush = MakeBrush(_settings.NetworkColor, System.Windows.Media.Colors.LightGreen);
-        CpuDot.Fill = _cpuBrush;
-        DiskDot.Fill = _diskBrush;
-        NetDot.Fill = _netBrush;
+        UpdateLegendDots();
         _memBrush = MakeBrush(_settings.MemoryColor, System.Windows.Media.Color.FromRgb(0xCB, 0xA6, 0xF7));
     }
 
@@ -540,6 +590,7 @@ public partial class WidgetWindow : Window
         TitleText.FontSize = Math.Max(6, 11 * factor);
         CpuLegend.FontSize = Math.Max(6, 10 * factor);
         DiskLegend.FontSize = Math.Max(6, 10 * factor);
+        NetLegend.FontSize = Math.Max(6, 10 * factor);
     }
 
     public void ApplyVisibility(bool showTitle, bool showLegend, bool showGrid, bool showTopProcess,
@@ -575,8 +626,7 @@ public partial class WidgetWindow : Window
         LegendPanel.Visibility  = _settings.ShowLegend ? Visibility.Visible : Visibility.Collapsed;
 
         var netVisibility = _settings.ShowNetwork ? Visibility.Visible : Visibility.Collapsed;
-        NetDot.Visibility    = netVisibility;
-        NetLegend.Visibility = netVisibility;
+        NetLegendItem.Visibility = netVisibility;
 
         DiskSpaceBarBorder.Visibility = _settings.ShowDiskSpaceBar
             ? Visibility.Visible : Visibility.Collapsed;

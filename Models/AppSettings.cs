@@ -45,6 +45,11 @@ public class WidgetSettings
     /// <summary>Show a narrow right-side bar indicating percent of physical memory in use.</summary>
     public bool ShowMemoryBar { get; set; } = false;
 
+    /// <summary>Draw each series as a 50%-alpha filled area instead of a line (toggled by clicking the legend).</summary>
+    public bool CpuFilled { get; set; } = false;
+    public bool DiskFilled { get; set; } = false;
+    public bool NetFilled { get; set; } = false;
+
     public bool EmbedInWallpaper { get; set; } = true;
 
     public string BackgroundColor { get; set; } = "#1E1E2E";
