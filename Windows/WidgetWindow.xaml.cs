@@ -708,6 +708,7 @@ public partial class WidgetWindow : Window
             _dragOffset = e.GetPosition(this);
         }
         _isDragging = true;
+        SetCapturedCursor(System.Windows.Input.Cursors.SizeAll);
         WidgetBorder.CaptureMouse();
         e.Handled = true;
     }
@@ -737,7 +738,30 @@ public partial class WidgetWindow : Window
             return;
         }
 
-        WidgetBorder.Cursor = CursorFor(GetResizeZone(e.GetPosition(WidgetBorder)));
+        UpdateHoverCursor(GetResizeZone(e.GetPosition(WidgetBorder)));
+    }
+
+    /// <summary>
+    /// The move cursor comes from ChartBorder (XAML) and the hand cursor from the legend
+    /// items, so everything else (padding/edges, title, side bars) shows the default arrow.
+    /// Resize corners overlap the chart's corners (CornerHitSize &gt; padding), so while
+    /// in a corner the border forces its resize cursor over any child cursor.
+    /// </summary>
+    private void UpdateHoverCursor(ResizeZone zone)
+    {
+        bool inCorner = zone != ResizeZone.None;
+        WidgetBorder.Cursor = inCorner ? CursorFor(zone) : null;
+        WidgetBorder.ForceCursor = inCorner;
+    }
+
+    /// <summary>
+    /// While the border has mouse capture (drag/resize), it's the element queried for the
+    /// cursor, so pin the appropriate cursor for the duration of the operation.
+    /// </summary>
+    private void SetCapturedCursor(System.Windows.Input.Cursor cursor)
+    {
+        WidgetBorder.Cursor = cursor;
+        WidgetBorder.ForceCursor = true;
     }
 
     private void Widget_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -747,6 +771,7 @@ public partial class WidgetWindow : Window
             _isResizing = false;
             _resizeZone = ResizeZone.None;
             WidgetBorder.ReleaseMouseCapture();
+            UpdateHoverCursor(GetResizeZone(e.GetPosition(WidgetBorder)));
 
             _settings.Width = Width;
             _settings.Height = Height;
@@ -762,6 +787,7 @@ public partial class WidgetWindow : Window
         if (!_isDragging) return;
         _isDragging = false;
         WidgetBorder.ReleaseMouseCapture();
+        UpdateHoverCursor(GetResizeZone(e.GetPosition(WidgetBorder)));
 
         if (_isEmbedded)
         {
@@ -831,6 +857,7 @@ public partial class WidgetWindow : Window
         _resizeStartTop = Top;
         _resizeStartEmbeddedX = _embeddedX;
         _resizeStartEmbeddedY = _embeddedY;
+        SetCapturedCursor(CursorFor(zone));
         WidgetBorder.CaptureMouse();
     }
 

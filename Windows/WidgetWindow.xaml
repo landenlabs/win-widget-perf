@@ -98,7 +98,6 @@
             BorderThickness="1"
             CornerRadius="10"
             Padding="10"
-            Cursor="SizeAll"
             MouseLeftButtonDown="Widget_MouseLeftButtonDown"
             MouseMove="Widget_MouseMove"
             MouseLeftButtonUp="Widget_MouseLeftButtonUp"
@@ -178,7 +177,8 @@
                         Grid.Column="1"
                         Background="#FF0D0D1A"
                         CornerRadius="4"
-                        ClipToBounds="True">
+                        ClipToBounds="True"
+                        Cursor="SizeAll">
                     <Grid>
                         <Canvas x:Name="ChartCanvas" SizeChanged="ChartCanvas_SizeChanged"/>
 
@@ -191,26 +191,26 @@
                             <!-- Each item toggles its series between line and filled-area. -->
                             <StackPanel x:Name="CpuLegendItem" Orientation="Horizontal"
                                         Background="Transparent" Cursor="Hand"
-                                        Tag="Cpu" Margin="0,0,10,0"
+                                        Tag="Cpu"
                                         ToolTip="Click to toggle line / filled area"
                                         MouseLeftButtonDown="LegendItem_MouseLeftButtonDown">
                                 <Ellipse x:Name="CpuDot" Width="8" Height="8" Fill="#FF89B4FA"
                                          StrokeThickness="1.5"
                                          VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                <TextBlock x:Name="CpuLegend" Text="CPU  --%"
+                                <TextBlock x:Name="CpuLegend" Margin="0,0,10,0" Text="CPU  --%"
                                            Foreground="#FFCDD6F4" FontSize="10"
                                            FontFamily="Consolas, Courier New"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
                             <StackPanel x:Name="DiskLegendItem" Orientation="Horizontal"
                                         Background="Transparent" Cursor="Hand"
-                                        Tag="Disk" Margin="0,0,10,0"
+                                        Tag="Disk"
                                         ToolTip="Click to toggle line / filled area"
                                         MouseLeftButtonDown="LegendItem_MouseLeftButtonDown">
                                 <Ellipse x:Name="DiskDot" Width="8" Height="8" Fill="#FFF9A825"
                                          StrokeThickness="1.5"
                                          VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                <TextBlock x:Name="DiskLegend" Text="C:  --%"
+                                <TextBlock x:Name="DiskLegend" Margin="0,0,10,0" Text="C:  --%"
                                            Foreground="#FFCDD6F4" FontSize="10"
                                            FontFamily="Consolas, Courier New"
                                            VerticalAlignment="Center"/>
