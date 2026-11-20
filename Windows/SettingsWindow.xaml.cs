@@ -167,6 +167,20 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     private bool _showMemoryBar;
     public bool ShowMemoryBar { get => _showMemoryBar; set { _showMemoryBar = value; OnPropertyChanged(); LivePreviewVisibility(); } }
 
+    private bool _showTemperature;
+    public bool ShowTemperature { get => _showTemperature; set { _showTemperature = value; OnPropertyChanged(); LivePreviewVisibility(); } }
+
+    // Temperature color thresholds (°C) — applied on OK.
+    private int _cpuTempWarm, _cpuTempHot, _gpuTempWarm, _gpuTempHot;
+    public int CpuTempWarm { get => _cpuTempWarm; set { _cpuTempWarm = value; OnPropertyChanged(); } }
+    public int CpuTempHot  { get => _cpuTempHot;  set { _cpuTempHot  = value; OnPropertyChanged(); } }
+    public int GpuTempWarm { get => _gpuTempWarm; set { _gpuTempWarm = value; OnPropertyChanged(); } }
+    public int GpuTempHot  { get => _gpuTempHot;  set { _gpuTempHot  = value; OnPropertyChanged(); } }
+
+    public string AutoStartHint => AutoStartService.IsPackaged
+        ? "Installed app: also listed in Task Manager › Startup apps"
+        : "";
+
     // ── Originals for Cancel restore ────────────────────────────────────────
 
     private readonly string _origBgColor;
@@ -190,6 +204,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     private readonly bool _origShowNetwork;
     private readonly bool _origShowDriveSelector;
     private readonly bool _origShowDiskSpaceBar;
+    private readonly bool _origShowTemperature;
     private readonly double _origPosX;
     private readonly double _origPosY;
 
@@ -241,6 +256,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _origShowNetwork        = widget.ShowNetwork;
         _origShowDriveSelector  = widget.ShowDriveSelector;
         _origShowDiskSpaceBar   = widget.ShowDiskSpaceBar;
+        _origShowTemperature    = widget.ShowTemperature;
         _origPosX               = livePreviewTarget?.Left ?? widget.X;
         _origPosY             = livePreviewTarget?.Top  ?? widget.Y;
         _editPosX             = _origPosX;
@@ -270,6 +286,11 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _showNetwork        = widget.ShowNetwork;
         _showDriveSelector  = widget.ShowDriveSelector;
         _showDiskSpaceBar   = widget.ShowDiskSpaceBar;
+        _showTemperature    = widget.ShowTemperature;
+        _cpuTempWarm        = widget.CpuTempWarm;
+        _cpuTempHot         = widget.CpuTempHot;
+        _gpuTempWarm        = widget.GpuTempWarm;
+        _gpuTempHot         = widget.GpuTempHot;
 
         // Fields were assigned after InitializeComponent() established the bindings,
         // so push every bound property to the UI now.
@@ -288,6 +309,8 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
             nameof(EmbedInWallpaper), nameof(AutoStartEnabled),
             nameof(ShowTitle), nameof(ShowLegend), nameof(ShowGrid), nameof(ShowTopProcess), nameof(ShowNetwork),
             nameof(ShowDriveSelector), nameof(ShowDiskSpaceBar),
+            nameof(ShowTemperature), nameof(CpuTempWarm), nameof(CpuTempHot),
+            nameof(GpuTempWarm), nameof(GpuTempHot), nameof(AutoStartHint),
             nameof(WidgetPositionText),
         })
         {
@@ -326,7 +349,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     private void LivePreviewChartColors() => _livePreviewTarget?.ApplyChartColors(_chartBgColorHex, _cpuColorHex, _diskColorHex, _netColorHex, _memColorHex);
     private void LivePreviewVisibility() => _livePreviewTarget?.ApplyVisibility(
         _showTitle, _showLegend, _showGrid, _showTopProcess, _showNetwork,
-        _showDriveSelector, _showDiskSpaceBar, _showMemoryBar);
+        _showDriveSelector, _showDiskSpaceBar, _showMemoryBar, _showTemperature);
     private void LivePreviewChartSettings() =>
         _livePreviewTarget?.ApplyChartSettings(_selectedDrive, Math.Max(1, _durationSeconds),
             Math.Max(100, _updateInterval));
@@ -524,6 +547,12 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _widget.ShowDriveSelector = _showDriveSelector;
         _widget.ShowDiskSpaceBar  = _showDiskSpaceBar;
         _widget.ShowMemoryBar     = _showMemoryBar;
+        _widget.ShowTemperature   = _showTemperature;
+        // Keep thresholds sane: hot must be above warm.
+        _widget.CpuTempWarm       = Math.Clamp(_cpuTempWarm, 1, 149);
+        _widget.CpuTempHot        = Math.Clamp(Math.Max(_cpuTempHot, _widget.CpuTempWarm + 1), 2, 150);
+        _widget.GpuTempWarm       = Math.Clamp(_gpuTempWarm, 1, 149);
+        _widget.GpuTempHot        = Math.Clamp(Math.Max(_gpuTempHot, _widget.GpuTempWarm + 1), 2, 150);
 
         var config = DisplayService.GetCurrentDisplayConfiguration();
         DisplayService.SaveDisplayPosition(_widget, config, (int)_editPosX, (int)_editPosY);
@@ -533,8 +562,11 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
             _livePreviewTarget.Top  = _editPosY;
         }
 
-        AutoStartService.SetEnabled(_autoStartEnabled);
-        App.Settings.AutoStart = _autoStartEnabled;
+        var autoStartError = AutoStartService.SetEnabled(_autoStartEnabled);
+        App.Settings.AutoStart = AutoStartService.IsEnabled();
+        if (autoStartError != null)
+            System.Windows.MessageBox.Show(this, autoStartError, "WinWidgetPerf — Auto-start",
+                MessageBoxButton.OK, MessageBoxImage.Information);
 
         SettingsService.Save(App.Settings);
         DialogResult = true;
@@ -555,6 +587,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _widget.ShowGrid             = _origShowGrid;
         _widget.ShowTopProcess       = _origShowTopProcess;
         _widget.ShowNetwork          = _origShowNetwork;
+        _widget.ShowTemperature      = _origShowTemperature;
         _widget.DiskDrive            = _origDrive;
         _widget.DurationSeconds      = _origDurationSeconds;
         _widget.UpdateInterval       = _origUpdateInterval;
@@ -563,7 +596,8 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _livePreviewTarget?.ApplyChartColors(_origChartBgColor, _origCpuColor, _origDiskColor, _origNetColor, _origMemColor);
         _livePreviewTarget?.ApplyFontScale(_origFontScalePercent);
         _livePreviewTarget?.ApplyVisibility(_origShowTitle, _origShowLegend, _origShowGrid, _origShowTopProcess,
-            _origShowNetwork, _origShowDriveSelector, _origShowDiskSpaceBar, _origShowMemoryBar);
+            _origShowNetwork, _origShowDriveSelector, _origShowDiskSpaceBar, _origShowMemoryBar,
+            _origShowTemperature);
         _livePreviewTarget?.ApplyChartSettings(_origDrive, _origDurationSeconds, _origUpdateInterval);
         _livePreviewTarget?.ApplySize(_origWidth, _origHeight);
         if (_livePreviewTarget != null)

@@ -152,6 +152,8 @@
                         <CheckBox x:Name="AutoStartCheck" Content="Auto-start on login"
                                   IsChecked="{Binding AutoStartEnabled, Mode=TwoWay}"
                                   Foreground="#FFA6ADC8" VerticalAlignment="Center" Margin="0,8,0,0"/>
+                        <TextBlock Text="{Binding AutoStartHint}" Foreground="#FF6C7086" FontSize="10"
+                                   Margin="22,2,0,0"/>
                     </StackPanel>
                 </Border>
 
@@ -222,6 +224,56 @@
                         <CheckBox Content="Show memory bar (right side, % of RAM in use)"
                                   IsChecked="{Binding ShowMemoryBar, Mode=TwoWay}"
                                   Foreground="#FFA6ADC8" Margin="0,8,0,0"/>
+                        <CheckBox Content="Show CPU / GPU temperature in title (upper left)"
+                                  IsChecked="{Binding ShowTemperature, Mode=TwoWay}"
+                                  Foreground="#FFA6ADC8" Margin="0,8,0,0"/>
+
+                        <!-- Temperature color thresholds: white below yellow, yellow below red -->
+                        <Grid Margin="22,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="50"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ShowTemperature}" Value="False">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                            <Setter Property="Opacity" Value="0.45"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="Yellow at ≥" Foreground="#FFF9E24F"
+                                       FontSize="11" Margin="0,0,0,4"/>
+                            <TextBlock Grid.Row="0" Grid.Column="3" Text="Red at ≥" Foreground="#FFF35B5B"
+                                       FontSize="11" Margin="0,0,0,4"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="CPU:" Foreground="#FFA6ADC8" VerticalAlignment="Center"/>
+                            <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource DarkTextBox}" Width="60" Margin="0,0,0,4"
+                                     Text="{Binding CpuTempWarm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="2" Text="°C" Foreground="#FF6C7086" VerticalAlignment="Center" Margin="6,0,20,0"/>
+                            <TextBox Grid.Row="1" Grid.Column="3" Style="{StaticResource DarkTextBox}" Width="60" Margin="0,0,0,4"
+                                     Text="{Binding CpuTempHot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="4" Text="°C" Foreground="#FF6C7086" VerticalAlignment="Center" Margin="6,0,0,0"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="GPU:" Foreground="#FFA6ADC8" VerticalAlignment="Center"/>
+                            <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource DarkTextBox}" Width="60"
+                                     Text="{Binding GpuTempWarm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBlock Grid.Row="2" Grid.Column="2" Text="°C" Foreground="#FF6C7086" VerticalAlignment="Center" Margin="6,0,20,0"/>
+                            <TextBox Grid.Row="2" Grid.Column="3" Style="{StaticResource DarkTextBox}" Width="60"
+                                     Text="{Binding GpuTempHot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBlock Grid.Row="2" Grid.Column="4" Text="°C" Foreground="#FF6C7086" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                        </Grid>
                     </StackPanel>
                 </Border>
 

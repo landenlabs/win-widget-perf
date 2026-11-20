@@ -14,6 +14,7 @@ public partial class App : System.Windows.Application
     private readonly PerfService _perfService = new();
     private readonly ProcessCpuService _processCpuService = new();
     private readonly NetworkService _networkService = new();
+    private readonly TemperatureService _temperatureService = new();
 
     public static AppSettings Settings { get; private set; } = new();
 
@@ -58,6 +59,7 @@ public partial class App : System.Windows.Application
         _perfService.Dispose();
         _processCpuService.Dispose();
         _networkService.Dispose();
+        _temperatureService.Dispose();
         _mutex?.ReleaseMutex();
         _mutex?.Dispose();
         base.OnExit(e);
@@ -65,7 +67,7 @@ public partial class App : System.Windows.Application
 
     private void CreateAndShowWidget(WidgetSettings settings)
     {
-        var window = new WidgetWindow(settings, _perfService, _processCpuService, _networkService);
+        var window = new WidgetWindow(settings, _perfService, _processCpuService, _networkService, _temperatureService);
         _widgetWindows.Add(window);
         window.Show();
     }

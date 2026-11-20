@@ -50,6 +50,18 @@ public class WidgetSettings
     public bool DiskFilled { get; set; } = false;
     public bool NetFilled { get; set; } = false;
 
+    /// <summary>Show CPU/GPU temperatures at the left of the title bar.</summary>
+    public bool ShowTemperature { get; set; } = false;
+
+    /// <summary>
+    /// °C thresholds for the temperature labels: below Warm = white, Warm..Hot = yellow,
+    /// at/above Hot = red. Defaults are conservative starting points — tune per machine.
+    /// </summary>
+    public int CpuTempWarm { get; set; } = 70;
+    public int CpuTempHot { get; set; } = 85;
+    public int GpuTempWarm { get; set; } = 75;
+    public int GpuTempHot { get; set; } = 85;
+
     public bool EmbedInWallpaper { get; set; } = true;
 
     public string BackgroundColor { get; set; } = "#1E1E2E";

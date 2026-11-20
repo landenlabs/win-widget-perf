@@ -17,6 +17,7 @@ public partial class WidgetWindow : Window
     private readonly PerfService _perfService;
     private readonly ProcessCpuService _processCpuService;
     private readonly NetworkService _networkService;
+    private readonly TemperatureService _temperatureService;
     private readonly Queue<PerfSample> _history = new();
 
     private System.Windows.Threading.DispatcherTimer? _updateTimer;
@@ -35,10 +36,14 @@ public partial class WidgetWindow : Window
     private ulong _memUsedBytes, _memTotalBytes;
     private string _topProcessText = "";
     private string? _topProcessToolTip;
+    private double? _cpuTemp, _gpuTemp;
 
     private static readonly SolidColorBrush TitleNameBrush = MakeFrozenBrush(0xAA, 0xFF, 0xFF, 0xFF);
     private static readonly SolidColorBrush TitleStatsBrush = MakeFrozenBrush(0x88, 0xFF, 0xFF, 0xFF);
     private static readonly SolidColorBrush TitleProcBrush = MakeFrozenBrush(0xFF, 0xE6, 0xB8, 0x60);
+    private static readonly SolidColorBrush TempNormalBrush = MakeFrozenBrush(0xFF, 0xFF, 0xFF, 0xFF);   // white
+    private static readonly SolidColorBrush TempWarmBrush   = MakeFrozenBrush(0xFF, 0xF9, 0xE2, 0x4F);   // yellow
+    private static readonly SolidColorBrush TempHotBrush    = MakeFrozenBrush(0xFF, 0xF3, 0x5B, 0x5B);   // red
 
     private bool _isEmbedded;
     private int _embeddedX;
@@ -70,7 +75,8 @@ public partial class WidgetWindow : Window
 
     public string WidgetId => _settings.Id;
 
-    public WidgetWindow(WidgetSettings settings, PerfService perfService, ProcessCpuService processCpuService, NetworkService networkService)
+    public WidgetWindow(WidgetSettings settings, PerfService perfService, ProcessCpuService processCpuService, NetworkService networkService,
+                        TemperatureService temperatureService)
     {
         InitializeComponent();
 
@@ -78,6 +84,7 @@ public partial class WidgetWindow : Window
         _perfService = perfService;
         _processCpuService = processCpuService;
         _networkService = networkService;
+        _temperatureService = temperatureService;
 
         _bgColorHex = string.IsNullOrEmpty(settings.BackgroundColor) ? "#1E1E2E" : settings.BackgroundColor;
         _bgOpacity = settings.BackgroundOpacity > 0 ? settings.BackgroundOpacity : 0.80;
@@ -240,6 +247,7 @@ public partial class WidgetWindow : Window
         }
 
         UpdateTopProcess();
+        UpdateTemperatures();
         RefreshTitleLine(cpu, disk, net);
         DrawChart();
     }
@@ -267,6 +275,22 @@ public partial class WidgetWindow : Window
             string.Join("\n", tops.Select((t, i) => $"{i + 1}. {t.Name}  {t.Percent:0.#}%"));
     }
 
+    private void UpdateTemperatures()
+    {
+        if (_settings.ShowTemperature && _settings.ShowTitle)
+        {
+            _cpuTemp = _temperatureService.GetCpuTemperature();
+            _gpuTemp = _temperatureService.GetGpuTemperature();
+        }
+        else
+        {
+            _cpuTemp = _gpuTemp = null;
+        }
+    }
+
+    private static SolidColorBrush TempBrush(double celsius, int warm, int hot) =>
+        celsius >= hot ? TempHotBrush : celsius >= warm ? TempWarmBrush : TempNormalBrush;
+
     /// <summary>
     /// Rebuilds the title-row text: widget name, then live CPU/disk/network values, then
     /// the top-process indicator. TextTrimming clips this from the right as the icon panel
@@ -275,6 +299,25 @@ public partial class WidgetWindow : Window
     private void RefreshTitleLine(double cpu, double disk, double net)
     {
         TitleText.Inlines.Clear();
+
+        // Temperatures lead the title so right-side trimming never hides them.
+        var tempTip = new List<string>();
+        if (_settings.ShowTemperature)
+        {
+            if (_cpuTemp is double ct)
+            {
+                TitleText.Inlines.Add(new Run($"CPU {ct:0}°C  ")
+                    { Foreground = TempBrush(ct, _settings.CpuTempWarm, _settings.CpuTempHot) });
+                tempTip.Add($"CPU {ct:0.#}°C  (yellow ≥ {_settings.CpuTempWarm}°, red ≥ {_settings.CpuTempHot}°)");
+            }
+            if (_gpuTemp is double gt)
+            {
+                TitleText.Inlines.Add(new Run($"GPU {gt:0}°C  ")
+                    { Foreground = TempBrush(gt, _settings.GpuTempWarm, _settings.GpuTempHot) });
+                tempTip.Add($"GPU {gt:0.#}°C  (yellow ≥ {_settings.GpuTempWarm}°, red ≥ {_settings.GpuTempHot}°)");
+            }
+        }
+
         TitleText.Inlines.Add(new Run("📈 Performance") { Foreground = TitleNameBrush });
 
         string stats = $"   CPU {cpu:0}%  {NormalizeDrive(_settings.DiskDrive)}: {disk:0}%";
@@ -284,7 +327,13 @@ public partial class WidgetWindow : Window
         if (!string.IsNullOrEmpty(_topProcessText))
             TitleText.Inlines.Add(new Run("   " + _topProcessText) { Foreground = TitleProcBrush });
 
-        TitleText.ToolTip = _topProcessToolTip;
+        var tips = tempTip.Count > 0 ? string.Join("\n", tempTip) : null;
+        TitleText.ToolTip = (tips, _topProcessToolTip) switch
+        {
+            (null, var p) => p,
+            (var t, null) => t,
+            (var t, var p) => t + "\n\n" + p,
+        };
     }
 
     /// <summary>Fixed-width "nnn%" (space-padded, clamped to 0–999) so the monospace legend doesn't shift.</summary>
@@ -595,8 +644,9 @@ public partial class WidgetWindow : Window
 
     public void ApplyVisibility(bool showTitle, bool showLegend, bool showGrid, bool showTopProcess,
                                 bool showNetwork, bool showDriveSelector, bool showDiskSpaceBar,
-                                bool showMemoryBar)
+                                bool showMemoryBar, bool showTemperature)
     {
+        _settings.ShowTemperature   = showTemperature;
         _settings.ShowMemoryBar     = showMemoryBar;
         _settings.ShowTitle         = showTitle;
         _settings.ShowLegend        = showLegend;
@@ -617,6 +667,7 @@ public partial class WidgetWindow : Window
 
         ApplyVisibilityInternal();
         UpdateTopProcess();
+        UpdateTemperatures();
         DrawChart();
     }
 

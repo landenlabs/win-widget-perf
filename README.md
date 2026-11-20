@@ -118,6 +118,15 @@ This approach works on Windows 10 because the Settings dialog is a normal opaque
 > The release zip contains a single self-contained `WinWidgetPerf.exe` plus an `Assets\` folder.  
 > You must have [.NET 10.0 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) installed.
 
+### Option A2 — MSIX installer
+
+1. From [Releases](https://github.com/landenlabs/win-widget-perf/releases) download `WinWidgetPerf-<version>-x64.msix` (or `-arm64.msix`)
+2. If the release also includes `WinWidgetPerf.cer` (self-signed build), trust it once from an elevated PowerShell:
+   `Import-Certificate -FilePath WinWidgetPerf.cer -CertStoreLocation Cert:\LocalMachine\TrustedPeople`
+3. Double-click the `.msix` to install. It shows up in the Start menu as **WinWidgetPerf**.
+
+> The MSIX is self-contained and does not need the .NET runtime installed.
+
 ### Option B — Build from source
 
 ```cmd
