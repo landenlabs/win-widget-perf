@@ -267,6 +267,12 @@ WinWidgetPerf/
 
 ---
 
+## Privacy
+
+No accounts, ads, analytics, telemetry or tracking. See [privacy.md](privacy.md) for exactly what the app reads, stores and (if anything) sends.
+
+---
+
 ## License
 
 Apache 2.0 © [LanDen Labs](https://github.com/landenlabs) 2026
