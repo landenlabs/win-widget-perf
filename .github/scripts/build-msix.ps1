@@ -7,18 +7,29 @@
 #
 # The certificate subject MUST equal -Publisher (the manifest Identity Publisher),
 # otherwise signtool rejects the package.
+#
+# Microsoft Store build: pass -Store and omit -PfxPath. The package is left UNSIGNED (the Store
+# re-signs it) and -IdentityName / -Publisher / -PublisherDisplayName MUST match
+# Partner Center > Product management > Product identity, or the upload is rejected.
+#
+#   pwsh .github/scripts/build-msix.ps1 -Arch x64 -Version 6.11.11 -Store `
+#        -IdentityName 12345LanDenLabs.WinWidgetPerf -Publisher 'CN=XXXXXXXX-...' -PublisherDisplayName 'LanDen Labs'
 
 param(
     [Parameter(Mandatory)] [ValidateSet('x64', 'arm64')] [string] $Arch,
     [Parameter(Mandatory)] [string] $Version,
-    [Parameter(Mandatory)] [string] $PfxPath,
-    [Parameter(Mandatory)] [string] $PfxPassword,
+    [string] $PfxPath = '',
+    [string] $PfxPassword = '',
     [string] $Publisher = 'CN=LanDen Labs',
+    [string] $IdentityName = 'LanDenLabs.WinWidgetPerf',
+    [string] $PublisherDisplayName = 'LanDen Labs',
+    [switch] $Store,
     [string] $OutDir = 'dist',
     [string] $TimestampUrl = ''
 )
 
 $ErrorActionPreference = 'Stop'
+if (-not $Store -and -not $PfxPath) { throw '-PfxPath is required unless -Store is given' }
 $root = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 Push-Location $root
 try {
@@ -65,7 +76,9 @@ try {
     finally { $src.Dispose() }
 
     # 3. Manifest
-    $pubEsc = [System.Security.SecurityElement]::Escape($Publisher)
+    $pubEsc  = [System.Security.SecurityElement]::Escape($Publisher)
+    $idEsc   = [System.Security.SecurityElement]::Escape($IdentityName)
+    $pubName = [System.Security.SecurityElement]::Escape($PublisherDisplayName)
     @"
 <?xml version="1.0" encoding="utf-8"?>
 <Package
@@ -74,11 +87,12 @@ try {
   xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   IgnorableNamespaces="uap uap5 rescap">
-  <Identity Name="LanDenLabs.WinWidgetPerf" Publisher="$pubEsc" Version="$msixVersion" ProcessorArchitecture="$Arch" />
+  <Identity Name="$idEsc" Publisher="$pubEsc" Version="$msixVersion" ProcessorArchitecture="$Arch" />
   <Properties>
     <DisplayName>WinWidgetPerf</DisplayName>
-    <PublisherDisplayName>LanDen Labs</PublisherDisplayName>
+    <PublisherDisplayName>$pubName</PublisherDisplayName>
     <Logo>Images\StoreLogo.png</Logo>
+    <Description>CPU, disk, network, memory and temperature stripchart widget for the desktop</Description>
   </Properties>
   <Dependencies>
     <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0" />
@@ -110,14 +124,19 @@ try {
 
     # 4. Pack + sign
     New-Item -ItemType Directory -Force $OutDir | Out-Null
-    $msix = Join-Path (Resolve-Path $OutDir) "WinWidgetPerf-$($Version.TrimStart('v'))-$Arch.msix"
+    $suffix = if ($Store) { '-store' } else { '' }
+    $msix = Join-Path (Resolve-Path $OutDir) "WinWidgetPerf-$($Version.TrimStart('v'))-$Arch$suffix.msix"
     & $makeappx pack /o /d $layout /p $msix
     if ($LASTEXITCODE) { throw "makeappx failed ($LASTEXITCODE)" }
 
-    $signArgs = @('sign', '/fd', 'SHA256', '/f', $PfxPath, '/p', $PfxPassword)
-    if ($TimestampUrl) { $signArgs += @('/tr', $TimestampUrl, '/td', 'SHA256') }
-    & $signtool @signArgs $msix
-    if ($LASTEXITCODE) { throw "signtool failed ($LASTEXITCODE)" }
+    if ($Store) {
+        Write-Host "Store package left unsigned (Partner Center signs it)"
+    } else {
+        $signArgs = @('sign', '/fd', 'SHA256', '/f', $PfxPath, '/p', $PfxPassword)
+        if ($TimestampUrl) { $signArgs += @('/tr', $TimestampUrl, '/td', 'SHA256') }
+        & $signtool @signArgs $msix
+        if ($LASTEXITCODE) { throw "signtool failed ($LASTEXITCODE)" }
+    }
 
     Write-Host "Built $msix (version $msixVersion)"
 }

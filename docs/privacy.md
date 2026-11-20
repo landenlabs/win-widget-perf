@@ -1,3 +1,7 @@
+---
+title: Privacy Policy
+---
+
 # WinWidgetPerf Privacy Policy
 
 **Effective date:** November 20, 2026
@@ -94,7 +98,7 @@ this policy describes.
 
 If the app's behavior changes in a way that affects privacy, this page will be updated and the
 effective date above will change. The history of this page is public on
-[GitHub](https://github.com/landenlabs/win-widget-perf/commits/main/privacy.md).
+[GitHub](https://github.com/landenlabs/win-widget-perf/commits/main/docs/privacy.md).
 
 ## Contact
 

@@ -230,6 +230,14 @@ build.bat <dest-dir>
 
 Kills any running instance, publishes a self-contained, compressed single-file exe (the same build as the release zip), copies it to `<dest-dir>\winwidgets\`, and writes a `<dest-dir>\WinWidgetPerf.bat` launcher. `<dest-dir>` defaults to the `BINDIR` environment variable.
 
+### Releases and the Microsoft Store
+
+Pushing a `v*` tag runs `.github/workflows/build.yml`. It attaches the portable zip, the signed MSIX packages (x64, arm64) and the install scripts to a GitHub release.
+
+The same run also builds **unsigned** Store packages, `WinWidgetPerf-<ver>-<arch>-store.msix`, and puts them in the build artifact only. Upload them in Partner Center, which signs and hosts them. Their identity comes from the repo Actions variables `MSIX_IDENTITY_NAME`, `MSIX_PUBLISHER` and `MSIX_PUBLISHER_DISPLAY_NAME`, which must match Partner Center > Product identity. If the variables aren't set, the step is skipped. Listing text, URLs and the Store logo are in [store-assets/](store-assets/store-listing.md).
+
+The project site and privacy policy are served by GitHub Pages from `docs/` at https://landenlabs.github.io/win-widget-perf/.
+
 ---
 
 ## Project Structure
@@ -259,6 +267,8 @@ WinWidgetPerf/
 ├── .github/
 │   ├── workflows/build.yml     # Release build: zip + signed MSIX (x64, arm64)
 │   └── scripts/build-msix.ps1  # MSIX packaging and signing
+├── docs/                       # GitHub Pages site: index.md (home page), privacy.md (privacy policy)
+├── store-assets/               # Microsoft Store listing text and logo
 ├── build.bat                   # Build and install portable exe locally
 ├── install-msix.ps1            # Trust certificate + install MSIX (end users)
 ├── uninstall-msix.ps1          # Remove MSIX + its self-signed certificate(s)
@@ -269,7 +279,7 @@ WinWidgetPerf/
 
 ## Privacy
 
-No accounts, ads, analytics, telemetry or tracking. See [privacy.md](privacy.md) for exactly what the app reads, stores and (if anything) sends.
+No accounts, ads, analytics, telemetry or tracking. The [privacy policy](https://landenlabs.github.io/win-widget-perf/privacy.html) ([source](docs/privacy.md)) lists exactly what the app reads, stores and (if anything) sends.
 
 ---
 
