@@ -170,7 +170,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     private bool _showTemperature;
     public bool ShowTemperature { get => _showTemperature; set { _showTemperature = value; OnPropertyChanged(); LivePreviewVisibility(); } }
 
-    // Temperature color thresholds (°C) — applied on OK.
+    // Temperature color thresholds (°F) — applied on OK.
     private int _cpuTempWarm, _cpuTempHot, _gpuTempWarm, _gpuTempHot;
     public int CpuTempWarm { get => _cpuTempWarm; set { _cpuTempWarm = value; OnPropertyChanged(); } }
     public int CpuTempHot  { get => _cpuTempHot;  set { _cpuTempHot  = value; OnPropertyChanged(); } }
@@ -549,10 +549,10 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _widget.ShowMemoryBar     = _showMemoryBar;
         _widget.ShowTemperature   = _showTemperature;
         // Keep thresholds sane: hot must be above warm.
-        _widget.CpuTempWarm       = Math.Clamp(_cpuTempWarm, 1, 149);
-        _widget.CpuTempHot        = Math.Clamp(Math.Max(_cpuTempHot, _widget.CpuTempWarm + 1), 2, 150);
-        _widget.GpuTempWarm       = Math.Clamp(_gpuTempWarm, 1, 149);
-        _widget.GpuTempHot        = Math.Clamp(Math.Max(_gpuTempHot, _widget.GpuTempWarm + 1), 2, 150);
+        _widget.CpuTempWarm       = Math.Clamp(_cpuTempWarm, 1, 299);
+        _widget.CpuTempHot        = Math.Clamp(Math.Max(_cpuTempHot, _widget.CpuTempWarm + 1), 2, 300);
+        _widget.GpuTempWarm       = Math.Clamp(_gpuTempWarm, 1, 299);
+        _widget.GpuTempHot        = Math.Clamp(Math.Max(_gpuTempHot, _widget.GpuTempWarm + 1), 2, 300);
 
         var config = DisplayService.GetCurrentDisplayConfiguration();
         DisplayService.SaveDisplayPosition(_widget, config, (int)_editPosX, (int)_editPosY);

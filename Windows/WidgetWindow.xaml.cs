@@ -288,8 +288,10 @@ public partial class WidgetWindow : Window
         }
     }
 
-    private static SolidColorBrush TempBrush(double celsius, int warm, int hot) =>
-        celsius >= hot ? TempHotBrush : celsius >= warm ? TempWarmBrush : TempNormalBrush;
+    private static double ToFahrenheit(double celsius) => celsius * 9.0 / 5.0 + 32.0;
+
+    private static SolidColorBrush TempBrush(double fahrenheit, int warm, int hot) =>
+        fahrenheit >= hot ? TempHotBrush : fahrenheit >= warm ? TempWarmBrush : TempNormalBrush;
 
     /// <summary>
     /// Rebuilds the title-row text: widget name, then live CPU/disk/network values, then
@@ -304,17 +306,19 @@ public partial class WidgetWindow : Window
         var tempTip = new List<string>();
         if (_settings.ShowTemperature)
         {
-            if (_cpuTemp is double ct)
+            if (_cpuTemp is double ctC)
             {
-                TitleText.Inlines.Add(new Run($"CPU {ct:0}°C  ")
+                double ct = ToFahrenheit(ctC);
+                TitleText.Inlines.Add(new Run($"CPU {ct:0}°F  ")
                     { Foreground = TempBrush(ct, _settings.CpuTempWarm, _settings.CpuTempHot) });
-                tempTip.Add($"CPU {ct:0.#}°C  (yellow ≥ {_settings.CpuTempWarm}°, red ≥ {_settings.CpuTempHot}°)");
+                tempTip.Add($"CPU {ct:0.#}°F  (yellow ≥ {_settings.CpuTempWarm}°, red ≥ {_settings.CpuTempHot}°)");
             }
-            if (_gpuTemp is double gt)
+            if (_gpuTemp is double gtC)
             {
-                TitleText.Inlines.Add(new Run($"GPU {gt:0}°C  ")
+                double gt = ToFahrenheit(gtC);
+                TitleText.Inlines.Add(new Run($"GPU {gt:0}°F  ")
                     { Foreground = TempBrush(gt, _settings.GpuTempWarm, _settings.GpuTempHot) });
-                tempTip.Add($"GPU {gt:0.#}°C  (yellow ≥ {_settings.GpuTempWarm}°, red ≥ {_settings.GpuTempHot}°)");
+                tempTip.Add($"GPU {gt:0.#}°F  (yellow ≥ {_settings.GpuTempWarm}°, red ≥ {_settings.GpuTempHot}°)");
             }
         }
 

@@ -1,4 +1,6 @@
 // Copyright (c) 2026 LanDen Labs - Dennis Lang
+using System.Text.Json.Serialization;
+
 namespace WinWidgetPerf.Models;
 
 public class AppSettings
@@ -54,13 +56,14 @@ public class WidgetSettings
     public bool ShowTemperature { get; set; } = false;
 
     /// <summary>
-    /// °C thresholds for the temperature labels: below Warm = white, Warm..Hot = yellow,
+    /// °F thresholds for the temperature labels: below Warm = white, Warm..Hot = yellow,
     /// at/above Hot = red. Defaults are conservative starting points — tune per machine.
+    /// JSON keys carry an "F" suffix so older °C values saved under the original keys are ignored.
     /// </summary>
-    public int CpuTempWarm { get; set; } = 70;
-    public int CpuTempHot { get; set; } = 85;
-    public int GpuTempWarm { get; set; } = 75;
-    public int GpuTempHot { get; set; } = 85;
+    [JsonPropertyName("CpuTempWarmF")] public int CpuTempWarm { get; set; } = 158;  // 70 °C
+    [JsonPropertyName("CpuTempHotF")]  public int CpuTempHot  { get; set; } = 185;  // 85 °C
+    [JsonPropertyName("GpuTempWarmF")] public int GpuTempWarm { get; set; } = 167;  // 75 °C
+    [JsonPropertyName("GpuTempHotF")]  public int GpuTempHot  { get; set; } = 185;  // 85 °C
 
     public bool EmbedInWallpaper { get; set; } = true;
 

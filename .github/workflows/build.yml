@@ -102,3 +102,4 @@ jobs:
           WinWidgetPerf.zip
           dist/*.msix
           dist/*.cer
+          install-msix.ps1

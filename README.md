@@ -121,9 +121,12 @@ This approach works on Windows 10 because the Settings dialog is a normal opaque
 ### Option A2 — MSIX installer
 
 1. From [Releases](https://github.com/landenlabs/win-widget-perf/releases) download `WinWidgetPerf-<version>-x64.msix` (or `-arm64.msix`)
-2. If the release also includes `WinWidgetPerf.cer` (self-signed build), trust it once from an elevated PowerShell:
+2. Easiest: also download `install-msix.ps1` into the same folder and run it from a normal PowerShell:
+   `powershell -ExecutionPolicy Bypass -File .\install-msix.ps1`
+   It picks the `.msix` matching your CPU, trusts its signing certificate (one UAC prompt), installs, and launches the app.
+3. Or manually: if the release includes `WinWidgetPerf.cer` (self-signed build), trust it once from an elevated PowerShell:
    `Import-Certificate -FilePath WinWidgetPerf.cer -CertStoreLocation Cert:\LocalMachine\TrustedPeople`
-3. Double-click the `.msix` to install. It shows up in the Start menu as **WinWidgetPerf**.
+   then double-click the `.msix` to install. It shows up in the Start menu as **WinWidgetPerf**.
 
 > The MSIX is self-contained and does not need the .NET runtime installed.
 
