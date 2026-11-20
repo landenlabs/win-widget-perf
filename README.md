@@ -67,8 +67,9 @@ The title bar names the busiest process and its average share of total CPU over 
 
 ## Requirements
 
-- Windows 10 or Windows 11
-- [.NET 10.0 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) — install once; no SDK required
+- Windows 10 or Windows 11 (x64 or ARM64)
+- No .NET install needed for the release builds — the MSIX and zip are self-contained
+- Framework-dependent builds from source need the [.NET 10.0 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
 
 Metrics are read from Windows performance counters (`Processor` and `LogicalDisk`) and per-process CPU times. Running non-elevated, a few protected system processes cannot be attributed to the busiest-process readout — run elevated to include them.
 
@@ -108,37 +109,35 @@ This approach works on Windows 10 because the Settings dialog is a normal opaque
 
 ## Installation
 
-### Option A — Download release zip
+See **[how-to-install.md](how-to-install.md)** for full details — every install option, why the MSIX is signed with a self-signed certificate, which Windows security features (SmartScreen, Smart App Control) can still block the app, and how to uninstall.
 
-1. Go to [Releases](https://github.com/landenlabs/win-widget-perf/releases)
-2. Download `WinWidgetPerf.zip`
-3. Extract to any folder (e.g. `C:\opt\bin\winwidgets\`)
-4. Run `WinWidgetPerf.exe`
+### Option A — MSIX installer (recommended)
 
-> The release zip contains a single self-contained `WinWidgetPerf.exe` plus an `Assets\` folder.  
-> You must have [.NET 10.0 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) installed.
-
-### Option A2 — MSIX installer
-
-1. From [Releases](https://github.com/landenlabs/win-widget-perf/releases) download `WinWidgetPerf-<version>-x64.msix` (or `-arm64.msix`)
-2. Easiest: also download `install-msix.ps1` into the same folder and run it from a normal PowerShell:
+1. From [Releases](https://github.com/landenlabs/win-widget-perf/releases) download `WinWidgetPerf-<version>-x64.msix` (or `-arm64.msix`) and `install-msix.ps1` into the same folder
+2. Run it from a normal (non-admin) PowerShell:
    `powershell -ExecutionPolicy Bypass -File .\install-msix.ps1`
-   It picks the `.msix` matching your CPU, trusts its signing certificate (one UAC prompt), installs, and launches the app.
-3. Or manually: if the release includes `WinWidgetPerf.cer` (self-signed build), trust it once from an elevated PowerShell:
-   `Import-Certificate -FilePath WinWidgetPerf.cer -CertStoreLocation Cert:\LocalMachine\TrustedPeople`
-   then double-click the `.msix` to install. It shows up in the Start menu as **WinWidgetPerf**.
+   It picks the `.msix` matching your CPU, trusts its self-signed certificate (one UAC prompt), installs, and launches the app. It shows up in the Start menu as **WinWidgetPerf**.
 
-> The MSIX is self-contained and does not need the .NET runtime installed.
+> Windows only installs an MSIX whose signing certificate is trusted, so the self-signed certificate must be added to **Local Machine → Trusted People** first — the script does this for you.  
+> To remove the app and the certificate later: `powershell -ExecutionPolicy Bypass -File .\uninstall-msix.ps1`
 
-### Option B — Build from source
+### Option B — Portable release zip
+
+1. Download `WinWidgetPerf.zip` from [Releases](https://github.com/landenlabs/win-widget-perf/releases)
+2. Right-click the zip → **Properties** → tick **Unblock** → **OK**
+3. Extract to any folder (e.g. `C:\opt\bin\winwidgets\`) and run `WinWidgetPerf.exe`
+
+> The zip contains a single self-contained `WinWidgetPerf.exe` (assets bundled inside) — no .NET runtime needed. The exe is unsigned, so SmartScreen may warn (**More info → Run anyway**).
+
+### Option C — Build from source
 
 ```cmd
 git clone https://github.com/landenlabs/win-widget-perf.git
 cd win-widget-perf
-install.bat
+build.bat C:\opt\bin
 ```
 
-The `install.bat` script publishes the project and copies the output to `C:\opt\bin\winwidgets\`.
+`build.bat <dest-dir>` publishes a self-contained single-file exe to `<dest-dir>\winwidgets\` and writes a `<dest-dir>\WinWidgetPerf.bat` launcher. With no argument it uses the `BINDIR` environment variable.
 
 ---
 
@@ -219,17 +218,17 @@ dotnet build WinWidgetPerf.csproj -c Release
 dotnet publish WinWidgetPerf.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true
 ```
 
-Output: `bin\Release\publish\`
+Output: `bin\Release\net10.0-windows10.0.17763.0\win-x64\publish\`
 
 This produces a **single `WinWidgetPerf.exe`** (all managed assemblies bundled) plus the `Assets\` folder. Users need only the .NET 10 Desktop Runtime — no SDK required.
 
 ### Build and install via batch script
 
 ```cmd
-install.bat
+build.bat <dest-dir>
 ```
 
-Kills any running instance, publishes, and copies all files to `C:\opt\bin\winwidgets\`.
+Kills any running instance, publishes a self-contained, compressed single-file exe (the same build as the release zip), copies it to `<dest-dir>\winwidgets\`, and writes a `<dest-dir>\WinWidgetPerf.bat` launcher. `<dest-dir>` defaults to the `BINDIR` environment variable.
 
 ---
 
@@ -257,7 +256,13 @@ WinWidgetPerf/
 ├── Assets/
 │   ├── landenlabs.mp4          # Animated logo (About dialog)
 │   └── landenlabs.png          # Static logo fallback
-└── install.bat                 # Build and install script
+├── .github/
+│   ├── workflows/build.yml     # Release build: zip + signed MSIX (x64, arm64)
+│   └── scripts/build-msix.ps1  # MSIX packaging and signing
+├── build.bat                   # Build and install portable exe locally
+├── install-msix.ps1            # Trust certificate + install MSIX (end users)
+├── uninstall-msix.ps1          # Remove MSIX + its self-signed certificate(s)
+└── how-to-install.md           # Install options, certificate and security notes
 ```
 
 ---
