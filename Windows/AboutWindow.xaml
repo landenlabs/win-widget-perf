@@ -61,6 +61,11 @@
                                      RequestNavigate="Hyperlink_RequestNavigate"
                                      Foreground="#FF89B4FA">https://github.com/landenlabs/win-widget-perf.git</Hyperlink>
                     </TextBlock>
+                    <TextBlock Foreground="#FFBAC2DE" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap">
+                        <Run>Privacy:&#x2003;&#x2003;&#x2002;</Run><Hyperlink NavigateUri="https://landenlabs.github.io/win-widget-perf/privacy.html"
+                                     RequestNavigate="Hyperlink_RequestNavigate"
+                                     Foreground="#FF89B4FA">Privacy policy</Hyperlink>
+                    </TextBlock>
                     <TextBlock Margin="0,12,0,0" Foreground="#FF6C7086" FontSize="11">
                         Metrics powered by Windows performance counters
                         (Processor, LogicalDisk &amp; network interfaces) and the Windows memory status API.

@@ -1,0 +1,55 @@
+<!-- Copyright (c) 2026 LanDen Labs - Dennis Lang -->
+<Window x:Class="WinWidgetPerf.Windows.NetworkSpeedInfoWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Saved Network Speed"
+        Width="440" SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Background="#FF1E1E2E"
+        Foreground="#FFCDD6F4"
+        WindowStyle="SingleBorderWindow">
+
+    <StackPanel Margin="24,20">
+        <TextBlock Text="Saved Network Speed" FontSize="16" FontWeight="SemiBold"
+                   Foreground="#FF7AA2F7"/>
+
+        <TextBlock Margin="0,12,0,0" FontSize="12" TextWrapping="Wrap" LineHeight="20"
+                   Foreground="#FFBAC2DE">
+            The <Run Foreground="#FFA6E3A1" FontWeight="SemiBold">Net</Run> line shows how busy
+            your connection is as a percentage of the fastest speed WinWidgetPerf has measured on it.
+            The widget learns that top speed as you use the connection, and saves it so it doesn't have
+            to start over every time it launches. 100% means your busiest moment so far.
+        </TextBlock>
+
+        <TextBlock Margin="0,14,0,0" Text="What's in the file" FontSize="13" FontWeight="SemiBold"
+                   Foreground="#FF89B4FA"/>
+        <TextBlock Margin="0,6,0,0" FontSize="12" TextWrapping="Wrap" LineHeight="20"
+                   Foreground="#FFA6ADC8">
+            One entry for each network you've connected to:
+            <LineBreak/>•  the fastest upload or download speed seen on it
+            <LineBreak/>•  the network adapter's link speed, used as an upper limit
+            <LineBreak/>•  a label with the connection type (Wi-Fi or wired) and your router's local IP address
+            <LineBreak/>
+            <LineBreak/>Each network is identified by your router's hardware (MAC) address, so the widget
+            can tell home, work and other networks apart. This identifies your router, not you.
+            The file never leaves your PC.
+        </TextBlock>
+
+        <TextBlock Margin="0,14,0,0" Text="Resetting it" FontSize="13" FontWeight="SemiBold"
+                   Foreground="#FF89B4FA"/>
+        <TextBlock Margin="0,6,0,0" FontSize="12" TextWrapping="Wrap" LineHeight="20"
+                   Foreground="#FFA6ADC8">
+            If your connection gets faster or slower (for example, a new internet plan), exit
+            WinWidgetPerf, delete the file, and restart. The widget will learn the new top speed.
+        </TextBlock>
+
+        <TextBlock Margin="0,14,0,0" FontSize="11" TextWrapping="Wrap"
+                   Foreground="#FF6C7086" FontFamily="Consolas, Courier New"
+                   x:Name="PathText"/>
+
+        <Button Margin="0,18,0,0" Content="Close" Style="{StaticResource AccentButton}"
+                HorizontalAlignment="Right" IsCancel="True" IsDefault="True" Click="Close_Click"/>
+    </StackPanel>
+</Window>

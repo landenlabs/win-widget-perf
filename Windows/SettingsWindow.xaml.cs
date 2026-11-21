@@ -523,6 +523,10 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         catch { /* ignore — opening Explorer is best-effort */ }
     }
 
+    /// <summary>Shows a dialog explaining what the saved network speed file holds and why.</summary>
+    private void NetworkSpeedInfo_Click(object sender, RoutedEventArgs e)
+        => new NetworkSpeedInfoWindow { Owner = this }.ShowDialog();
+
     private void OK_Click(object sender, RoutedEventArgs e)
     {
         _widget.BackgroundColor      = _bgColorHex;
