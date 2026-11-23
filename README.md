@@ -21,7 +21,7 @@
 ![.NET](https://img.shields.io/badge/.NET-10.0-purple)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 
-A lightweight Windows desktop widget that charts real-time **CPU load** and **disk queue activity** as a transparent scrolling stripchart directly on your desktop wallpaper. Both metrics share one chart, drawn in distinct colors. Built with WPF and .NET 10.
+A lightweight Windows desktop widget that charts real-time **CPU load**, **disk activity** and **network traffic** as a transparent scrolling stripchart directly on your desktop wallpaper, with optional memory and disk-space bars and CPU/GPU temperatures. All metrics share one chart, drawn in distinct colors. Built with WPF and .NET 10.
 
 **By [LanDen Labs](https://github.com/landenlabs) (2026)**
 
@@ -31,31 +31,32 @@ A lightweight Windows desktop widget that charts real-time **CPU load** and **di
 
 **Widget**
 
-![Widget stripchart](screens/widget-1.png)
+![Widget stripchart](screens/mixedgraph-1.png)
 
-The title bar names the busiest process and its average share of total CPU over the chart window — `🔥 chrome 1%` above. The legend shows the current CPU load (blue) and disk queue length (amber).
+The title bar names the busiest process and its average share of total CPU over the chart window. The legend shows the current CPU load (blue), disk activity (amber) and network load (green); click a legend item to switch that series between a line and a filled area.
 
 **Settings dialog**
 
-![Settings window](screens/settings-1.png)
+![Settings window](screens/setting-1.png)
 
 **About dialog**
 
-![About dialog](screens/about-1.png)
+![About dialog](screens/about.png)
 
 ---
 
 ## Features
 
-- **Dual-metric stripchart** — CPU load (0–100%) and disk queue activity on a single scrolling chart, each in its own color
+- **Multi-metric stripchart** — CPU load, disk activity and network load (0–100%) on a single scrolling chart, each in its own color, drawn as lines or filled areas
 - **Busiest-process readout** — the title bar names the process consuming the most CPU using a rolling average over the chart window, aggregated by name (all `chrome` children sum together); hover for the top three
-- **Per-drive disk monitoring** — pick any fixed drive (defaults to `C`); plots the average disk queue length, scaled so a configurable maximum maps to full chart height
+- **Per-drive disk monitoring** — pick any fixed drive (defaults to `C`); plots the percent of time the drive was active (Task Manager's disk "% Utilization")
+- **Optional side bars and temperatures** — disk space used (left), physical memory in use (right), and CPU/GPU temperatures in the title bar
 - **Configurable duration** — set the total time span shown across the chart (default 2 minutes)
 - **Resizable** — drag the corner grip to resize the widget, or set an exact size in Settings; the chart re-flows to fit
 - **Transparent overlay** — sits directly on the desktop wallpaper, no taskbar clutter
 - **Drag to reposition** — click and drag the widget anywhere on the desktop *(Windows 11)*
 - **Screen-map position picker** — drag a scaled widget marker across a miniature monitor map inside Settings to reposition the widget *(Windows 10 & 11 — see [Windows 10 notes](#windows-10-notes))*
-- **Multi-monitor aware** — position saved per monitor layout
+- **Multi-monitor aware** — position saved per monitor layout; a widget left on an unplugged monitor is moved back onto a remaining screen
 - **Fully customizable** — background, chart background, CPU and disk line colors, opacity, font scale, sample interval, and component visibility (title, legend, grid lines, top process)
 - **Multiple widgets** — add or remove widget instances from the system tray menu
 - **Wallpaper embed mode** — render the widget at the wallpaper layer (below all windows)
@@ -119,7 +120,8 @@ See **[how-to-install.md](how-to-install.md)** for full details — every instal
    It picks the `.msix` matching your CPU, trusts its self-signed certificate (one UAC prompt), installs, and launches the app. It shows up in the Start menu as **WinWidgetPerf**.
 
 > Windows only installs an MSIX whose signing certificate is trusted, so the self-signed certificate must be added to **Local Machine → Trusted People** first — the script does this for you.  
-> To remove the app and the certificate later: `powershell -ExecutionPolicy Bypass -File .\uninstall-msix.ps1`
+> To remove the app and the certificate later: `powershell -ExecutionPolicy Bypass -File .\uninstall-msix.ps1`  
+> The certificate is shared by all LanDen Labs widgets, so it is kept while any of them is still installed (add `-Force` to remove it anyway).
 
 ### Option B — Portable release zip
 
@@ -228,7 +230,17 @@ This produces a **single `WinWidgetPerf.exe`** (all managed assemblies bundled) 
 build.bat <dest-dir>
 ```
 
-Kills any running instance, publishes a self-contained, compressed single-file exe (the same build as the release zip), copies it to `<dest-dir>\winwidgets\`, and writes a `<dest-dir>\WinWidgetPerf.bat` launcher. `<dest-dir>` defaults to the `BINDIR` environment variable.
+Kills any running instance, runs the unit tests, publishes a self-contained, compressed single-file exe (the same build as the release zip), copies it to `<dest-dir>\winwidgets\`, and writes a `<dest-dir>\WinWidgetPerf.bat` launcher. `<dest-dir>` defaults to the `BINDIR` environment variable.
+
+### Unit tests
+
+```cmd
+dotnet run --project tests\WinWidgetPerf.Tests
+```
+
+The tests use xUnit v3 and run in-process. `dotnet test` also works (and Visual Studio's Test Explorer), but on machines whose security software inspects localhost traffic it can stall for 90 s with "Failed to negotiate protocol".
+
+Covers the window geometry that has regressed before: resize-corner hit testing, drag, corner resize (anchoring, min/max, DPI scaling), pulling a widget back from an unplugged monitor, and the stable monitor-layout key used to save positions. The math lives in `Services/WidgetGeometry.cs` (no WPF dependencies) so it can be tested directly; the release workflow and `build.bat` both run these tests and stop on failure.
 
 ### Releases and the Microsoft Store
 
@@ -247,14 +259,17 @@ WinWidgetPerf/
 ├── Models/
 │   ├── AppSettings.cs           # App and widget settings models
 │   ├── DisplayConfiguration.cs  # Multi-monitor position tracking
-│   └── PerfSample.cs            # One chart point (CPU + disk queue)
+│   └── PerfSample.cs            # One chart point (CPU + disk + network)
 ├── Services/
-│   ├── PerfService.cs          # CPU load + per-drive disk queue (perf counters)
+│   ├── PerfService.cs          # CPU load, disk activity, memory (perf counters)
+│   ├── NetworkService.cs       # Network throughput vs learned maximum
+│   ├── TemperatureService.cs   # CPU / GPU temperatures
 │   ├── ProcessCpuService.cs    # Rolling per-process CPU, busiest-process ranking
 │   ├── DesktopService.cs       # Wallpaper embed / Win32 window helpers
-│   ├── DisplayService.cs       # Per-monitor position save/restore
-│   ├── SettingsService.cs      # JSON settings persistence
-│   ├── AutoStartService.cs     # Run-on-login registry entry
+│   ├── DisplayService.cs       # Monitor enumeration, per-layout position save/restore
+│   ├── WidgetGeometry.cs       # Pure drag / resize / on-screen math (unit tested)
+│   ├── SettingsService.cs      # JSON settings persistence (atomic writes)
+│   ├── AutoStartService.cs     # Run-on-login: registry (portable) or StartupTask (MSIX)
 │   └── TrayIconService.cs      # System tray icon and menu
 ├── Windows/
 │   ├── AboutWindow.xaml        # About dialog
@@ -267,6 +282,7 @@ WinWidgetPerf/
 ├── .github/
 │   ├── workflows/build.yml     # Release build: zip + signed MSIX (x64, arm64)
 │   └── scripts/build-msix.ps1  # MSIX packaging and signing
+├── tests/WinWidgetPerf.Tests/  # xUnit tests for WidgetGeometry
 ├── docs/                       # GitHub Pages site: index.md (home page), privacy.md (privacy policy)
 ├── store-assets/               # Microsoft Store listing text and logo
 ├── build.bat                   # Build and install portable exe locally

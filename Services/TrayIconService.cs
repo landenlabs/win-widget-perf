@@ -41,6 +41,17 @@ public class TrayIconService : IDisposable
 
     private static Icon CreatePerfIcon()
     {
+        // Prefer the full-color app icon (perf.ico), picking the frame that matches
+        // the tray's DPI-scaled small-icon size so it renders crisp and in color.
+        try
+        {
+            using var stream = typeof(TrayIconService).Assembly
+                .GetManifestResourceStream("WinWidgetPerf.perf.ico");
+            if (stream != null)
+                return new Icon(stream, SystemInformation.SmallIconSize);
+        }
+        catch { /* fall back to drawn icon */ }
+
         try
         {
             using var bmp = new Bitmap(16, 16, System.Drawing.Imaging.PixelFormat.Format32bppArgb);

@@ -137,6 +137,6 @@
         </ScrollViewer>
 
         <Button Grid.Row="4" Content="Close" Style="{StaticResource AccentButton}"
-                HorizontalAlignment="Right" Click="Close_Click"/>
+                HorizontalAlignment="Right" IsCancel="True" IsDefault="True" Click="Close_Click"/>
     </Grid>
 </Window>

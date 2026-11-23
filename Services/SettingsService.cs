@@ -14,40 +14,44 @@ public static class SettingsService
 
     private static readonly string SettingsFile = System.IO.Path.Combine(AppDataPath, "settings.json");
 
-    static SettingsService()
-    {
-        if (!Directory.Exists(AppDataPath))
-            Directory.CreateDirectory(AppDataPath);
-    }
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     public static AppSettings Load()
     {
+        AppSettings settings;
         try
         {
-            if (File.Exists(SettingsFile))
-            {
-                var json = File.ReadAllText(SettingsFile);
-                return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
-            }
+            settings = File.Exists(SettingsFile)
+                ? JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(SettingsFile)) ?? new AppSettings()
+                : new AppSettings();
         }
         catch
         {
-            // Silently fail and return default settings
+            // Corrupt or unreadable file: start from defaults rather than failing to launch.
+            settings = new AppSettings();
         }
 
-        return new AppSettings();
+        foreach (var w in settings.Widgets)
+            DisplayService.PruneStalePositions(w);
+        return settings;
     }
 
+    /// <summary>
+    /// Writes to a temp file then swaps it in, so a crash or power loss mid-write can't leave a
+    /// truncated settings.json behind. Failures are swallowed (saving is called on every drag/resize).
+    /// </summary>
     public static void Save(AppSettings settings)
     {
         try
         {
-            var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(SettingsFile, json);
+            Directory.CreateDirectory(AppDataPath);
+            var tmp = SettingsFile + ".tmp";
+            File.WriteAllText(tmp, JsonSerializer.Serialize(settings, JsonOptions));
+            File.Move(tmp, SettingsFile, overwrite: true);
         }
         catch
         {
-            // Silently fail
+            // Best effort.
         }
     }
 }

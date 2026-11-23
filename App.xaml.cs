@@ -9,6 +9,8 @@ namespace WinWidgetPerf;
 public partial class App : System.Windows.Application
 {
     private static Mutex? _mutex;
+    private static bool _ownsMutex;
+    private AboutWindow? _aboutWindow;
     private TrayIconService? _trayIcon;
     private readonly List<WidgetWindow> _widgetWindows = [];
     private readonly PerfService _perfService = new();
@@ -22,8 +24,8 @@ public partial class App : System.Windows.Application
     {
         base.OnStartup(e);
 
-        _mutex = new Mutex(true, "WinWidgetPerf_UniqueInstance_v1", out bool isNew);
-        if (!isNew)
+        _mutex = new Mutex(true, "WinWidgetPerf_UniqueInstance_v1", out _ownsMutex);
+        if (!_ownsMutex)
         {
             System.Windows.MessageBox.Show("WinWidgetPerf is already running.",
                 "WinWidgetPerf", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -47,7 +49,7 @@ public partial class App : System.Windows.Application
             getWidgets:       () => Settings.Widgets,
             onWidgetSettings: id => _widgetWindows.FirstOrDefault(w => w.WidgetId == id)?.OpenSettings(),
             onWidgetRemove:   RemoveWidget,
-            onAbout:          OpenAbout,
+            onAbout:          () => OpenAbout(),
             onExit:           Shutdown,
             getCpuLoad:       () => _perfService.GetCpuLoad()
         );
@@ -60,7 +62,9 @@ public partial class App : System.Windows.Application
         _processCpuService.Dispose();
         _networkService.Dispose();
         _temperatureService.Dispose();
-        _mutex?.ReleaseMutex();
+        // Only the instance that acquired the mutex may release it (ReleaseMutex throws otherwise).
+        if (_ownsMutex)
+            _mutex?.ReleaseMutex();
         _mutex?.Dispose();
         base.OnExit(e);
     }
@@ -87,6 +91,8 @@ public partial class App : System.Windows.Application
 
     public void RemoveWidget(string widgetId)
     {
+        if (Settings.Widgets.Count <= 1) return;   // always keep at least one widget
+
         var window = _widgetWindows.FirstOrDefault(w => w.WidgetId == widgetId);
         if (window != null)
         {
@@ -103,8 +109,23 @@ public partial class App : System.Windows.Application
         _trayIcon?.RebuildMenu();
     }
 
-    private void OpenAbout()
+    /// <summary>Shows the About dialog, or activates it if it's already open.</summary>
+    public void OpenAbout(Window? owner = null)
     {
-        Dispatcher.Invoke(() => new WinWidgetPerf.Windows.AboutWindow().ShowDialog());
+        if (_aboutWindow != null)
+        {
+            _aboutWindow.Activate();
+            return;
+        }
+        try
+        {
+            _aboutWindow = new AboutWindow();
+            if (owner != null) _aboutWindow.Owner = owner;
+            _aboutWindow.ShowDialog();
+        }
+        finally
+        {
+            _aboutWindow = null;
+        }
     }
 }

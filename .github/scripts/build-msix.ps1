@@ -33,8 +33,10 @@ if (-not $Store -and -not $PfxPath) { throw '-PfxPath is required unless -Store 
 $root = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 Push-Location $root
 try {
-    # MSIX needs a 4-part numeric version (each part 0..65535); "v6.06.20" -> "6.6.20.0"
-    $parts = @($Version.TrimStart('v').Split('.') | ForEach-Object { [int]$_ })
+    # MSIX needs a 4-part numeric version (each part 0..65535); "v6.06.20" -> "6.6.20.0".
+    # Pre-release / build suffixes are dropped: "v6.11.17-beta" -> "6.11.17.0".
+    $numeric = ($Version.TrimStart('v') -split '[-+]', 2)[0]
+    $parts = @($numeric.Split('.') | ForEach-Object { [int]$_ })
     while ($parts.Count -lt 4) { $parts += 0 }
     $msixVersion = ($parts[0..3]) -join '.'
 

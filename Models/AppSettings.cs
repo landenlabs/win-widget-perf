@@ -12,6 +12,8 @@ public class AppSettings
 public class WidgetSettings
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
+
+    /// <summary>Last saved top-left, in screen physical pixels (fallback when the layout has no entry).</summary>
     public int X { get; set; } = 100;
     public int Y { get; set; } = 100;
 
@@ -78,14 +80,8 @@ public class WidgetSettings
     public string MemoryColor { get; set; } = "#FFCBA6F7";   // mauve
 
     /// <summary>
-    /// Stores positions for different display configurations.
-    /// Key: ConfigurationHash, Value: DisplayPosition
+    /// Top-left position (screen pixels) per monitor layout.
+    /// Key: <see cref="DisplayConfiguration.ConfigurationHash"/> (a "MON:" fingerprint).
     /// </summary>
     public Dictionary<string, DisplayPosition> DisplayPositions { get; set; } = [];
-
-    /// <summary>
-    /// Hash of the last known display configuration.
-    /// Used to determine if display setup has changed.
-    /// </summary>
-    public string LastDisplayConfigurationHash { get; set; } = string.Empty;
 }

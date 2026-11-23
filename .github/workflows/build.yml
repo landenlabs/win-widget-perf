@@ -19,6 +19,10 @@ jobs:
       with:
         dotnet-version: '10.0.x'
 
+    # Drag / resize / on-screen geometry regression tests - a failing test blocks the release.
+    - name: Unit tests
+      run: dotnet run --project tests/WinWidgetPerf.Tests -c Release
+
     - name: Publish portable single-file (self-contained, compressed)
       run: >
         dotnet publish WinWidgetPerf.csproj -c Release -r win-x64

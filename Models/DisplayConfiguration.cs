@@ -1,79 +1,31 @@
 // Copyright (c) 2026 LanDen Labs - Dennis Lang
 namespace WinWidgetPerf.Models;
 
-/// <summary>
-/// Represents a unique display configuration identified by monitor layout
-/// </summary>
+/// <summary>The current monitor layout, identified by a stable fingerprint.</summary>
 public class DisplayConfiguration
 {
-    /// <summary>
-    /// Unique hash of the display configuration (based on monitors count, resolution, DPI)
-    /// </summary>
+    /// <summary>Stable layout key from <see cref="Services.WidgetGeometry.Fingerprint"/>.</summary>
     public string ConfigurationHash { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Number of monitors in this configuration
-    /// </summary>
     public int MonitorCount { get; set; }
 
-    /// <summary>
-    /// Total virtual screen width (all monitors combined)
-    /// </summary>
+    /// <summary>Virtual-screen size (all monitors combined), in pixels.</summary>
     public int TotalWidth { get; set; }
-
-    /// <summary>
-    /// Total virtual screen height (all monitors combined)
-    /// </summary>
     public int TotalHeight { get; set; }
 
-    /// <summary>
-    /// Description of the configuration (e.g., "1 Monitor: 1920x1080", "2 Monitors: 3840x2160")
-    /// </summary>
-    public string Description { get; set; } = string.Empty;
+    public override bool Equals(object? obj) =>
+        obj is DisplayConfiguration config && config.ConfigurationHash == ConfigurationHash;
 
-    /// <summary>
-    /// Timestamp when this configuration was last active
-    /// </summary>
-    public DateTime LastUsed { get; set; }
+    public override int GetHashCode() => ConfigurationHash.GetHashCode();
 
-    public override bool Equals(object? obj)
-    {
-        return obj is DisplayConfiguration config && config.ConfigurationHash == ConfigurationHash;
-    }
-
-    public override int GetHashCode()
-    {
-        return ConfigurationHash.GetHashCode();
-    }
-
-    public override string ToString()
-    {
-        return $"{Description} [Hash: {ConfigurationHash}]";
-    }
+    public override string ToString() => ConfigurationHash;
 }
 
-/// <summary>
-/// Stores widget position for a specific display configuration
-/// </summary>
+/// <summary>Widget top-left (screen pixels) for one monitor layout.</summary>
 public class DisplayPosition
 {
-    /// <summary>
-    /// Configuration hash that this position applies to
-    /// </summary>
     public string ConfigurationHash { get; set; } = string.Empty;
-
-    /// <summary>
-    /// X coordinate on this display
-    /// </summary>
     public int X { get; set; }
-
-    /// <summary>
-    /// Y coordinate on this display
-    /// </summary>
     public int Y { get; set; }
-
-    /// <summary>
-    /// When this position was last set
-    /// </summary>
     public DateTime LastSet { get; set; }
 }

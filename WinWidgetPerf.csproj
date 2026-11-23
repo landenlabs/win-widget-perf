@@ -15,8 +15,8 @@
     <FileVersion>$(Version)</FileVersion>
     <InformationalVersion>$(Version)</InformationalVersion>
     <Product>WinWidgetPerf</Product>
-    <AssemblyTitle>CPU &amp; disk performance stripchart widget</AssemblyTitle>
-    <Description>Charts real-time CPU load and disk queue activity as a transparent stripchart overlay on the Windows desktop.</Description>
+    <AssemblyTitle>CPU, disk, network &amp; memory performance stripchart widget</AssemblyTitle>
+    <Description>Charts real-time CPU load, disk activity and network traffic as a transparent stripchart overlay on the Windows desktop.</Description>
     <Company>LanDen Labs</Company>
     <Authors>Dennis Lang</Authors>
     <Copyright>Copyright © 2026 LanDen Labs - Dennis Lang</Copyright>
@@ -30,6 +30,14 @@
     <Content Include="Assets\landenlabs.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <EmbeddedResource Include="perf.ico" LogicalName="WinWidgetPerf.perf.ico" />
+  </ItemGroup>
+
+  <!-- Unit tests live in tests\ with their own project; keep them out of the app build. -->
+  <ItemGroup>
+    <Compile Remove="tests\**" />
+    <None Remove="tests\**" />
+    <Page Remove="tests\**" />
   </ItemGroup>
 
 </Project>

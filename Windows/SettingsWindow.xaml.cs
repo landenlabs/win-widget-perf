@@ -205,8 +205,9 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     private readonly bool _origShowDriveSelector;
     private readonly bool _origShowDiskSpaceBar;
     private readonly bool _origShowTemperature;
-    private readonly double _origPosX;
-    private readonly double _origPosY;
+    private readonly int _origPosX;   // screen pixels
+    private readonly int _origPosY;
+    private bool _committed;          // set by OK; anything else that closes the window reverts the preview
 
     // ── Position picker state ────────────────────────────────────────────────
 
@@ -216,7 +217,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     private bool _markerDragging;
     private System.Windows.Point _markerDragStart;
     private double _markerDragOrigLeft, _markerDragOrigTop;
-    private double _editPosX, _editPosY;
+    private double _editPosX, _editPosY;   // screen pixels
 
     public string WidgetPositionText => $"X: {(int)_editPosX}  Y: {(int)_editPosY}";
 
@@ -257,8 +258,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _origShowDriveSelector  = widget.ShowDriveSelector;
         _origShowDiskSpaceBar   = widget.ShowDiskSpaceBar;
         _origShowTemperature    = widget.ShowTemperature;
-        _origPosX               = livePreviewTarget?.Left ?? widget.X;
-        _origPosY             = livePreviewTarget?.Top  ?? widget.Y;
+        (_origPosX, _origPosY)  = livePreviewTarget?.ScreenPosition ?? (widget.X, widget.Y);
         _editPosX             = _origPosX;
         _editPosY             = _origPosY;
 
@@ -429,8 +429,8 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         double markerW   = Math.Max(widgetWpx * _mapScale, 14);
         double markerH   = Math.Max(widgetHpx * _mapScale, 8);
 
-        double markerLeft = _mapLeft + (_editPosX * _pdpiScaleX - minX) * _mapScale;
-        double markerTop  = _mapTop  + (_editPosY * _pdpiScaleY - minY) * _mapScale;
+        double markerLeft = _mapLeft + (_editPosX - minX) * _mapScale;
+        double markerTop  = _mapTop  + (_editPosY - minY) * _mapScale;
 
         _widgetMarker = new System.Windows.Controls.Border
         {
@@ -476,16 +476,12 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         System.Windows.Controls.Canvas.SetLeft(_widgetMarker, newL);
         System.Windows.Controls.Canvas.SetTop(_widgetMarker, newT);
 
-        _editPosX = ((newL - _mapLeft) / _mapScale + _mapOffsetX) / _pdpiScaleX;
-        _editPosY = ((newT - _mapTop)  / _mapScale + _mapOffsetY) / _pdpiScaleY;
+        _editPosX = (newL - _mapLeft) / _mapScale + _mapOffsetX;
+        _editPosY = (newT - _mapTop)  / _mapScale + _mapOffsetY;
 
         OnPropertyChanged(nameof(WidgetPositionText));
 
-        if (_livePreviewTarget != null)
-        {
-            _livePreviewTarget.Left = _editPosX;
-            _livePreviewTarget.Top  = _editPosY;
-        }
+        _livePreviewTarget?.MoveTo((int)Math.Round(_editPosX), (int)Math.Round(_editPosY));
         e.Handled = true;
     }
 
@@ -558,13 +554,10 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         _widget.GpuTempWarm       = Math.Clamp(_gpuTempWarm, 1, 299);
         _widget.GpuTempHot        = Math.Clamp(Math.Max(_gpuTempHot, _widget.GpuTempWarm + 1), 2, 300);
 
+        int posX = (int)Math.Round(_editPosX), posY = (int)Math.Round(_editPosY);
         var config = DisplayService.GetCurrentDisplayConfiguration();
-        DisplayService.SaveDisplayPosition(_widget, config, (int)_editPosX, (int)_editPosY);
-        if (_livePreviewTarget != null)
-        {
-            _livePreviewTarget.Left = _editPosX;
-            _livePreviewTarget.Top  = _editPosY;
-        }
+        DisplayService.SaveDisplayPosition(_widget, config, posX, posY);
+        _livePreviewTarget?.MoveTo(posX, posY);
 
         var autoStartError = AutoStartService.SetEnabled(_autoStartEnabled);
         App.Settings.AutoStart = AutoStartService.IsEnabled();
@@ -573,11 +566,26 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
                 MessageBoxButton.OK, MessageBoxImage.Information);
 
         SettingsService.Save(App.Settings);
+        _committed = true;
         DialogResult = true;
         Close();
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e)
+    {
+        DialogResult = false;   // OnClosing does the revert
+        Close();
+    }
+
+    /// <summary>Esc, Cancel and the title-bar X all close without OK — every one of them must undo the live preview.</summary>
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        base.OnClosing(e);
+        if (!e.Cancel && !_committed)
+            RevertPreview();
+    }
+
+    private void RevertPreview()
     {
         // Restore the persistent settings object and the live widget
         _widget.ChartBackgroundColor = _origChartBgColor;
@@ -604,14 +612,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
             _origShowTemperature);
         _livePreviewTarget?.ApplyChartSettings(_origDrive, _origDurationSeconds, _origUpdateInterval);
         _livePreviewTarget?.ApplySize(_origWidth, _origHeight);
-        if (_livePreviewTarget != null)
-        {
-            _livePreviewTarget.Left = _origPosX;
-            _livePreviewTarget.Top  = _origPosY;
-        }
-
-        DialogResult = false;
-        Close();
+        _livePreviewTarget?.MoveTo(_origPosX, _origPosY);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
