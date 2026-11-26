@@ -3,7 +3,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="About WinWidgetPerf"
-        Width="380" Height="600"
+        Width="760" Height="600"
         MinWidth="380" MinHeight="500"
         ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen"
@@ -60,6 +60,16 @@
                         <Run>GitHub:&#x2003;&#x2003;&#x2003;</Run><Hyperlink NavigateUri="https://github.com/landenlabs/win-widget-perf.git"
                                      RequestNavigate="Hyperlink_RequestNavigate"
                                      Foreground="#FF89B4FA">https://github.com/landenlabs/win-widget-perf.git</Hyperlink>
+                    </TextBlock>
+                    <TextBlock x:Name="StoreLine" Foreground="#FFBAC2DE" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap">
+                        <Run>Store:&#x2003;&#x2003;&#x2003;</Run><Hyperlink NavigateUri="https://apps.microsoft.com/detail/9NX4ZTQV9TP1"
+                                     RequestNavigate="Hyperlink_RequestNavigate"
+                                     Foreground="#FF89B4FA">Microsoft Store</Hyperlink>
+                        <Hyperlink x:Name="UpdateAvailableLink"
+                                   NavigateUri="ms-windows-store://pdp/?productid=9NX4ZTQV9TP1"
+                                   RequestNavigate="Hyperlink_RequestNavigate"
+                                   Foreground="#FFF9E2AF"
+                                   ToolTip="A newer version is available — open the Store to update">(update available)</Hyperlink>
                     </TextBlock>
                     <TextBlock Foreground="#FFBAC2DE" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap">
                         <Run>Privacy:&#x2003;&#x2003;&#x2002;</Run><Hyperlink NavigateUri="https://landenlabs.github.io/win-widget-perf/privacy.html"

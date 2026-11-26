@@ -595,9 +595,11 @@ public partial class WidgetWindow : Window
         try
         {
             var color = (System.Windows.Media.Color)ColorConverter.ConvertFromString(_bgColorHex);
-            WidgetBorder.Background = new SolidColorBrush(color) { Opacity = opacity };
+            WidgetBorder.Background = new SolidColorBrush(color);
         }
         catch { }
+        // Fade the whole widget (frame, chart, text, bars), not just the background brush.
+        WidgetBorder.Opacity = opacity;
     }
 
     private void ApplyChartBackgroundInternal()

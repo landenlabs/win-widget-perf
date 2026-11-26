@@ -20,6 +20,7 @@
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%20%2F%2011-blue)
 ![.NET](https://img.shields.io/badge/.NET-10.0-purple)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
+[![Microsoft Store](https://img.shields.io/badge/Microsoft%20Store-Get%20it-0078D4?logo=microsoft)](https://apps.microsoft.com/detail/9NX4ZTQV9TP1)
 
 A lightweight Windows desktop widget that charts real-time **CPU load**, **disk activity** and **network traffic** as a transparent scrolling stripchart directly on your desktop wallpaper, with optional memory and disk-space bars and CPU/GPU temperatures. All metrics share one chart, drawn in distinct colors. Built with WPF and .NET 10.
 
@@ -112,7 +113,11 @@ This approach works on Windows 10 because the Settings dialog is a normal opaque
 
 See **[how-to-install.md](how-to-install.md)** for full details — every install option, why the MSIX is signed with a self-signed certificate, which Windows security features (SmartScreen, Smart App Control) can still block the app, and how to uninstall.
 
-### Option A — MSIX installer (recommended)
+### Microsoft Store (recommended)
+
+Install **WinWidgetPerf** from the [Microsoft Store](https://apps.microsoft.com/detail/9NX4ZTQV9TP1) (product ID `9NX4ZTQV9TP1`). The Store signs the package and keeps it updated, so there is no certificate to trust and no SmartScreen warning.
+
+### Option A — MSIX installer from GitHub
 
 1. From [Releases](https://github.com/landenlabs/win-widget-perf/releases) download `WinWidgetPerf-<version>-x64.msix` (or `-arm64.msix`) and `install-msix.ps1` into the same folder
 2. Run it from a normal (non-admin) PowerShell:
@@ -177,7 +182,7 @@ Access via right-click → **Settings** or the tray icon menu.
 | Chart Background | Plot-area background color |
 | CPU Line | Color of the CPU trace |
 | Disk Line | Color of the disk-active trace |
-| Opacity | Background transparency 0–100% — updates live |
+| Opacity | Transparency of the whole widget (frame, chart, text and bars), 10–100% — updates live |
 | Font Scale | Text size 50–200% — updates live |
 | Embed in wallpaper layer | Places widget behind all windows (requires restart) |
 | Auto-start on login | Launch the widget when Windows starts |

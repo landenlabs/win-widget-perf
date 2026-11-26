@@ -18,6 +18,14 @@ public partial class AboutWindow : Window
 
         VersionText.Text = $"v{AppVersion()}  ·  CPU, disk, network & memory desktop widget";
 
+        // "(update available)" is hidden until the Store confirms a newer package exists.
+        StoreLine.Inlines.Remove(UpdateAvailableLink);
+        Loaded += async (_, _) =>
+        {
+            if (await IsStoreUpdateAvailableAsync() && !_closing)
+                StoreLine.Inlines.Add(UpdateAvailableLink);
+        };
+
         var mp4 = Path.Combine(AppContext.BaseDirectory, "Assets", "landenlabs.mp4");
         if (File.Exists(mp4))
         {
@@ -63,6 +71,22 @@ public partial class AboutWindow : Window
         }
         var a = Assembly.GetExecutingAssembly().GetName().Version;
         return a is null ? "?" : $"{a.Major}.{a.Minor}.{a.Build}";
+    }
+
+    /// <summary>
+    /// Asks the Microsoft Store whether a newer version of this app is published. Only meaningful
+    /// for Store installs; the portable exe, sideloaded MSIX, or no network all report false.
+    /// </summary>
+    private static async Task<bool> IsStoreUpdateAvailableAsync()
+    {
+        if (!Services.AutoStartService.IsPackaged) return false;
+        try
+        {
+            var ctx = global::Windows.Services.Store.StoreContext.GetDefault();
+            var updates = await ctx.GetAppAndOptionalStorePackageUpdatesAsync();
+            return updates.Count > 0;
+        }
+        catch { return false; }
     }
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
