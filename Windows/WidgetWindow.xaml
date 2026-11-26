@@ -114,7 +114,11 @@
 
             <!-- Title section (collapses as a unit) -->
             <StackPanel x:Name="TitleSection" Grid.Row="0" Orientation="Vertical">
-                <Grid Height="20" Margin="0,0,0,4">
+                <!-- Click (without dragging) anywhere here except the icon buttons toggles the chart. -->
+                <Grid x:Name="TitleBarGrid" Height="20" Margin="0,0,0,4"
+                      Background="Transparent"
+                      Cursor="Hand"
+                      ToolTip="Click to collapse / expand">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
@@ -150,11 +154,11 @@
                                 Click="About_Click"/>
                     </StackPanel>
                 </Grid>
-                <Rectangle Height="1" Fill="#33FFFFFF" Margin="0,0,0,6" IsHitTestVisible="False"/>
+                <Rectangle x:Name="TitleSeparator" Height="1" Fill="#33FFFFFF" Margin="0,0,0,6" IsHitTestVisible="False"/>
             </StackPanel>
 
             <!-- Disk-space bar (left) + chart + memory bar (right) -->
-            <Grid Grid.Row="1">
+            <Grid x:Name="ChartArea" Grid.Row="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>  <!-- Disk-space bar -->
                     <ColumnDefinition Width="*"/>     <!-- Chart -->

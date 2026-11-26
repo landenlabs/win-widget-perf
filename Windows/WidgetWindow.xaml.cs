@@ -64,6 +64,13 @@ public partial class WidgetWindow : Window
     private int _startX, _startY;
     private double _startW, _startH;
 
+    // Title-bar click collapses the widget to just its title. The window has a fixed Height
+    // (SizeToContent=Manual), so the expanded height is remembered and restored on expand.
+    private const double ExpandedMinHeight = 80;
+    private bool _isCollapsed;
+    private bool _pressOnTitle;
+    private double _expandedHeight;
+
     private SettingsWindow? _settingsDialog;
 
     public string WidgetId => _settings.Id;
@@ -93,6 +100,7 @@ public partial class WidgetWindow : Window
 
         Width = settings.Width > MinWidth ? settings.Width : 340;
         Height = settings.Height > MinHeight ? settings.Height : 160;
+        _expandedHeight = Height;
 
         _currentDisplayConfiguration = DisplayService.GetCurrentDisplayConfiguration();
         (_posX, _posY) = DisplayService.GetDisplayPosition(settings, _currentDisplayConfiguration);
@@ -674,7 +682,13 @@ public partial class WidgetWindow : Window
 
     private void ApplyVisibilityInternal()
     {
+        // Without a title bar there'd be no way to expand again.
+        bool wasCollapsed = _isCollapsed;
+        if (!_settings.ShowTitle) _isCollapsed = false;
+
         TitleSection.Visibility = _settings.ShowTitle ? Visibility.Visible : Visibility.Collapsed;
+        ChartArea.Visibility      = _isCollapsed ? Visibility.Collapsed : Visibility.Visible;
+        TitleSeparator.Visibility = _isCollapsed ? Visibility.Collapsed : Visibility.Visible;
         LegendPanel.Visibility  = _settings.ShowLegend ? Visibility.Visible : Visibility.Collapsed;
 
         var netVisibility = _settings.ShowNetwork ? Visibility.Visible : Visibility.Collapsed;
@@ -685,7 +699,7 @@ public partial class WidgetWindow : Window
         MemoryBarBorder.Visibility = _settings.ShowMemoryBar
             ? Visibility.Visible : Visibility.Collapsed;
 
-        if (_settings.ShowDriveSelector)
+        if (_settings.ShowDriveSelector && !_isCollapsed)
         {
             DriveSelectorPanel.Visibility = Visibility.Visible;
             BuildDriveSelector();
@@ -694,6 +708,46 @@ public partial class WidgetWindow : Window
         {
             DriveSelectorPanel.Visibility = Visibility.Collapsed;
         }
+
+        if (wasCollapsed != _isCollapsed)
+            ApplyHeight();
+    }
+
+    // ── Collapse / expand ────────────────────────────────────────────────────
+
+    private void SetCollapsed(bool collapsed)
+    {
+        if (collapsed && !_settings.ShowTitle) return;
+        _isCollapsed = collapsed;
+        ApplyVisibilityInternal();
+        ApplyHeight();
+    }
+
+    /// <summary>Collapsed: shrink to the title row. Expanded: restore the remembered height.</summary>
+    private void ApplyHeight()
+    {
+        if (_isCollapsed)
+        {
+            MinHeight = 0;
+            UpdateLayout();
+            Height = TitleSection.ActualHeight
+                     + WidgetBorder.Padding.Top + WidgetBorder.Padding.Bottom
+                     + WidgetBorder.BorderThickness.Top + WidgetBorder.BorderThickness.Bottom;
+        }
+        else
+        {
+            MinHeight = ExpandedMinHeight;
+            Height = Math.Max(MinHeight, _expandedHeight);
+        }
+        if (_isEmbedded)
+            MoveTo(_posX, _posY);   // child windows need an explicit MoveWindow to pick up the new size
+    }
+
+    private bool IsOnTitleBar(object? source)
+    {
+        for (var d = source as DependencyObject; d != null; d = VisualTreeHelper.GetParent(d))
+            if (d == TitleBarGrid) return true;
+        return false;
     }
 
     /// <summary>Applies sampling-related settings and rebuilds the history buffer/timer.</summary>
@@ -714,9 +768,8 @@ public partial class WidgetWindow : Window
     public void ApplySize(double width, double height)
     {
         Width = Math.Max(MinWidth, width);
-        Height = Math.Max(MinHeight, height);
-        if (_isEmbedded)
-            MoveTo(_posX, _posY);   // child windows need an explicit MoveWindow to pick up the new size
+        _expandedHeight = Math.Max(ExpandedMinHeight, height);
+        ApplyHeight();   // collapsed keeps the title-only height until expanded
     }
 
     // ── Hover ────────────────────────────────────────────────────────────────
@@ -750,7 +803,9 @@ public partial class WidgetWindow : Window
 
         // Manual drag (DragMove() fails on Windows 10 with AllowsTransparency=True + WindowStyle=None,
         // and doesn't work at all for a window embedded in WorkerW). Everything is in screen pixels.
+        // A press on the title bar still drags; it only toggles collapse if released without moving.
         SnapshotStart();
+        _pressOnTitle = IsOnTitleBar(e.OriginalSource);
         _isDragging = true;
         SetCapturedCursor(System.Windows.Input.Cursors.SizeAll);
         WidgetBorder.CaptureMouse();
@@ -811,7 +866,21 @@ public partial class WidgetWindow : Window
     private void Widget_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         if (!_isDragging && !_isResizing) return;
+
+        bool toggle = false;
+        if (_isDragging && _pressOnTitle)
+        {
+            var c = DesktopService.GetCursorPosition();
+            toggle = Math.Abs(c.X - _startCursor.X) <= SystemParameters.MinimumHorizontalDragDistance * DpiX
+                  && Math.Abs(c.Y - _startCursor.Y) <= SystemParameters.MinimumVerticalDragDistance * DpiY;
+        }
+        _pressOnTitle = false;
+
+        if (toggle)
+            MoveTo(_startX, _startY);   // undo any sub-threshold jitter before the position is saved
         EndDragOrResize();
+        if (toggle)
+            SetCollapsed(!_isCollapsed);
         UpdateHoverCursor(GetResizeZone(e.GetPosition(WidgetBorder)));
         e.Handled = true;
     }
@@ -836,7 +905,8 @@ public partial class WidgetWindow : Window
         if (wasResizing)
         {
             _settings.Width = Width;
-            _settings.Height = Height;
+            if (!_isCollapsed)
+                _settings.Height = _expandedHeight = Height;
         }
         EnsureOnScreen();
         SavePosition();
@@ -896,7 +966,8 @@ public partial class WidgetWindow : Window
                                       c.X - _startCursor.X, c.Y - _startCursor.Y,
                                       dpiX, dpiY, MinWidth, MinHeight, maxW, maxH);
         Width = r.Width;
-        Height = r.Height;
+        if (!_isCollapsed)   // collapsed: width only, height stays title-sized
+            Height = r.Height;
         MoveTo(r.X, r.Y);
     }
 
